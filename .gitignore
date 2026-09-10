@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+functions/node_modules/
+
+# Build outputs & cache
+dist/
+.firebase/
+
+# Secrets & Service Accounts
+service-account.json
+functions/service-account.json
+*.pem
+*.key
+.env
+.env.local
+.env.*.local
+
+# OS & Logs
+.DS_Store
+Thumbs.db
+*.log

@@ -1,0 +1,1161 @@
+{
+  "STA_2570": {
+    "sales": [
+      {
+        "code": "3ZAP  A",
+        "qty": 90,
+        "unitPrice": 1990,
+        "totalPrice": 179100.0
+      },
+      {
+        "code": "Combo S",
+        "qty": 55,
+        "unitPrice": 3590,
+        "totalPrice": 197450.0
+      },
+      {
+        "code": "3 ZEED",
+        "qty": 1,
+        "unitPrice": 1990.0,
+        "totalPrice": 1990.0
+      },
+      {
+        "code": "ซื้อหนังสือ3zeed",
+        "qty": 0,
+        "unitPrice": 0.0,
+        "totalPrice": 0.0
+      },
+      {
+        "code": "ค่าหนังสือ(ซื้อเพิ่ม)",
+        "qty": 0,
+        "unitPrice": 0.0,
+        "totalPrice": 0.0
+      },
+      {
+        "code": "ดอกเบี้ยเงินฝาก",
+        "qty": 0,
+        "unitPrice": 0.0,
+        "totalPrice": 0.0
+      }
+    ],
+    "ads": [
+      {
+        "date": "11 พ.ค. 2026",
+        "description": "Ads 1-10 พ.ค.",
+        "price": 18936.29
+      },
+      {
+        "date": "21 พ.ค. 2026",
+        "description": "Ads 11-20 พ.ค.",
+        "price": 21993.42
+      },
+      {
+        "date": "1/6/2026",
+        "description": "Ads 21-31 พ.ค.",
+        "price": 26446.62
+      },
+      {
+        "date": "13/06/2026",
+        "description": "Ads 1-10 มิ.ย.",
+        "price": 22409.12
+      }
+    ],
+    "expenses": [
+      {
+        "date": "21/พ.ค./69",
+        "description": "หนังสือ 3 zap 3 zeed + ค่าส่ง",
+        "price": 20884.0,
+        "note": "จ่ายแล้ว"
+      },
+      {
+        "date": "30/พ.ค./69",
+        "description": "ค่าส่งหนังสือ รอบ 1-3",
+        "price": 3010.0,
+        "note": "580+1209+1221"
+      },
+      {
+        "date": "30/พ.ค./69",
+        "description": "ค่ารางวัล 3za ห้องทั่วไป+ค่าส่ง",
+        "price": 2006.0,
+        "note": "1289+717"
+      },
+      {
+        "date": "30/พ.ค./69",
+        "description": "ค่าซอง 100 ซอง",
+        "price": 480.0,
+        "note": ""
+      },
+      {
+        "date": "30/5/2026",
+        "description": "ค่าสมัคร zoom 4 เดือน",
+        "price": 16050.0,
+        "note": ""
+      },
+      {
+        "date": "4/มิย/69",
+        "description": "ค่าต่ออายุแชทบอท",
+        "price": 999.0,
+        "note": ""
+      },
+      {
+        "date": "4/มิย/69",
+        "description": "ค่าจ้างยิงแอด",
+        "price": 3000.0,
+        "note": ""
+      },
+      {
+        "date": "4/มิย/69",
+        "description": "ค่าหนังสือ (สั่งเฉพาะกิจ) 40 เล่ม",
+        "price": 6000.0,
+        "note": "มาร์คโมส+เพิ่มพูล"
+      }
+    ],
+    "distributions": [
+      {
+        "date": "1 มิ.ย.69",
+        "perPerson": 40000.0,
+        "total": 120000.0,
+        "note": "แบ่งคนละ 40,000.00 บาท"
+      },
+      {
+        "date": "13 มิย 69",
+        "perPerson": 20000.0,
+        "total": 60000.0,
+        "note": "แบ่งคนละ 20,000.00 บาท"
+      }
+    ],
+    "stock": [
+      {
+        "bookCode": "3zap",
+        "received": 100
+      },
+      {
+        "bookCode": "3zeed",
+        "received": 108
+      }
+    ]
+  },
+  "3COOL_2569": {
+    "sales": [
+      {
+        "code": "M (3COOL)",
+        "qty": 170,
+        "unitPrice": 999,
+        "totalPrice": 169830.0
+      }
+    ],
+    "ads": [
+      {
+        "date": "01/04/69",
+        "description": "Ad 23-31 มีค 69",
+        "price": 15245.67
+      },
+      {
+        "date": "11/04/69",
+        "description": "Ad 1-10 เมย 69",
+        "price": 17606.56
+      },
+      {
+        "date": "21/04/69",
+        "description": "Ad 11-20 เมย 69",
+        "price": 18761.49
+      },
+      {
+        "date": "30/04/69",
+        "description": "Ad 21-30 เมย 69",
+        "price": 32134.29
+      }
+    ],
+    "expenses": [
+      {
+        "date": "11/04/69",
+        "description": "จ้างยิงad เดือน มีค 69",
+        "price": 3000.0,
+        "note": ""
+      },
+      {
+        "date": "15/04/69",
+        "description": "เลี้ยงอาหาร 3zab Ubon trip",
+        "price": 2362.0,
+        "note": ""
+      },
+      {
+        "date": "18/04/69",
+        "description": "ค่าซื้อรางวัล 3sa ห้องปกติ",
+        "price": 2157.0,
+        "note": ""
+      },
+      {
+        "date": "18/04/69",
+        "description": "ค่าทำรูปและ VDO AD",
+        "price": 1200.0,
+        "note": ""
+      },
+      {
+        "date": "28/04/1969",
+        "description": "ซื้อzoom",
+        "price": 4012.5,
+        "note": ""
+      },
+      {
+        "date": "06/05/69",
+        "description": "จ่ายค่าจ้างยิงad",
+        "price": 3000.0,
+        "note": ""
+      },
+      {
+        "date": "08/05/69",
+        "description": "หักภาษี",
+        "price": 3550.0,
+        "note": ""
+      }
+    ],
+    "distributions": [
+      {
+        "date": "28/04/69",
+        "perPerson": 20000.0,
+        "total": 60000.0,
+        "note": "แบ่งคนละ 20,000.00 บาท"
+      },
+      {
+        "date": "08/05/69",
+        "perPerson": 4900.0,
+        "total": 14700.0,
+        "note": "แบ่งคนละ 4,900.00 บาท"
+      }
+    ],
+    "stock": []
+  },
+  "3za_2569": {
+    "sales": [
+      {
+        "code": "1A",
+        "qty": 331,
+        "unitPrice": 999,
+        "totalPrice": 330669.0
+      },
+      {
+        "code": "1B",
+        "qty": 458,
+        "unitPrice": 999,
+        "totalPrice": 457542.0
+      },
+      {
+        "code": "1C",
+        "qty": 57,
+        "unitPrice": 1790,
+        "totalPrice": 102030.0
+      },
+      {
+        "code": "4A",
+        "qty": 141,
+        "unitPrice": 999,
+        "totalPrice": 140859.0
+      },
+      {
+        "code": "4B",
+        "qty": 291,
+        "unitPrice": 999,
+        "totalPrice": 290709.0
+      },
+      {
+        "code": "4C",
+        "qty": 21,
+        "unitPrice": 1790,
+        "totalPrice": 37590.0
+      }
+    ],
+    "ads": [
+      {
+        "date": "3 มค 69",
+        "description": "Ad 21-31 ธค 68",
+        "price": 9244.8
+      },
+      {
+        "date": "11 มค 69",
+        "description": "Ad 1-10 มค 69",
+        "price": 7204.0
+      },
+      {
+        "date": "21 มค 69",
+        "description": "Ad 11-20 มค 69",
+        "price": 10068.7
+      },
+      {
+        "date": "1 กพ 69",
+        "description": "Ad 21-31 มค 69",
+        "price": 30911.62
+      },
+      {
+        "date": "11 กพ 69",
+        "description": "Ad 1-10 กพ 69",
+        "price": 35235.02
+      },
+      {
+        "date": "21 กพ 69",
+        "description": "Ad 1-20 กพ 69",
+        "price": 28478.35
+      },
+      {
+        "date": "1 มีค 69",
+        "description": "Ad 21-28 กพ 69",
+        "price": 16161.02
+      },
+      {
+        "date": "11 มีค 69",
+        "description": "Ad 1-10 มีค 69",
+        "price": 32198.87
+      },
+      {
+        "date": "21 มีค 69",
+        "description": "Ad 11-20 มีค 69",
+        "price": 35255.67
+      },
+      {
+        "date": "23 มีค 69",
+        "description": "Ad 21-22 มีค 69",
+        "price": 6840.97
+      }
+    ],
+    "expenses": [
+      {
+        "date": "6/มค/69",
+        "description": "ค่าแชทบอต",
+        "price": 999.0,
+        "note": ""
+      },
+      {
+        "date": "23 มค 69",
+        "description": "กล่องสุ่มรีวิว 3zeed",
+        "price": 1814.0,
+        "note": ""
+      },
+      {
+        "date": "4 กพ 69",
+        "description": "ค่าแชทบอทใหม่",
+        "price": 1500.0,
+        "note": ""
+      },
+      {
+        "date": "5 กพ 69",
+        "description": "ค่าจ้างยิงแอด",
+        "price": 3000.0,
+        "note": ""
+      },
+      {
+        "date": "10 กพ 69",
+        "description": "ค่า zoom 3sa",
+        "price": 4012.05,
+        "note": ""
+      },
+      {
+        "date": "11 กพ 69",
+        "description": "ภาษี 1-5 แสน (แสนละ 2100)",
+        "price": 10500.0,
+        "note": ""
+      },
+      {
+        "date": "16 กพ 69",
+        "description": "Poster 3sa ปกติ",
+        "price": 600.0,
+        "note": ""
+      },
+      {
+        "date": "19 กพ 69",
+        "description": "ทำรีวิว 4 เพจ",
+        "price": 1000.0,
+        "note": ""
+      },
+      {
+        "date": "1 มีค 69",
+        "description": "ภาพแอด 3cool",
+        "price": 800.0,
+        "note": ""
+      },
+      {
+        "date": "5 มีค 69",
+        "description": "ค่าจ้างยิง ad",
+        "price": 3000.0,
+        "note": ""
+      },
+      {
+        "date": "11 มีค 69",
+        "description": "Zoom ม.1/ม.4",
+        "price": 8025.0,
+        "note": ""
+      },
+      {
+        "date": "14 มีค 69",
+        "description": "ค่าส่งรางวัล + congrats",
+        "price": 2408.0,
+        "note": ""
+      },
+      {
+        "date": "14 มีค 69",
+        "description": "ภาษี 6 แสน- 1 ล้าน (แสนละ 2100)",
+        "price": 10500.0,
+        "note": ""
+      },
+      {
+        "date": "23 มีค 69",
+        "description": "ภาษี 1.1-1.4M (4แสน)",
+        "price": 8400.0,
+        "note": ""
+      }
+    ],
+    "distributions": [
+      {
+        "date": "21/มค/69",
+        "perPerson": 20000.0,
+        "total": 60000.0,
+        "note": "แบ่งคนละ 20,000.00 บาท"
+      },
+      {
+        "date": "1/กพ/69",
+        "perPerson": 30000.0,
+        "total": 90000.0,
+        "note": "แบ่งคนละ 30,000.00 บาท"
+      },
+      {
+        "date": "12/กพ/69",
+        "perPerson": 100000.0,
+        "total": 300000.0,
+        "note": "แบ่งคนละ 100,000.00 บาท"
+      },
+      {
+        "date": "1 มีค 69",
+        "perPerson": 80000.0,
+        "total": 240000.0,
+        "note": "แบ่งคนละ 80,000.00 บาท"
+      },
+      {
+        "date": "14/มีค/69",
+        "perPerson": 70000.0,
+        "total": 210000.0,
+        "note": "แบ่งคนละ 70,000.00 บาท"
+      },
+      {
+        "date": "23 มีค 69",
+        "perPerson": 78000.0,
+        "total": 234000.0,
+        "note": "แบ่งคนละ 78,000.00 บาท"
+      }
+    ],
+    "stock": []
+  },
+  "STA_2569": {
+    "sales": [
+      {
+        "code": "3ZAP  P",
+        "qty": 26,
+        "unitPrice": 1990,
+        "totalPrice": 51740.0
+      },
+      {
+        "code": "Combo X",
+        "qty": 28,
+        "unitPrice": 3590,
+        "totalPrice": 100520.0
+      },
+      {
+        "code": "3 ZEED G",
+        "qty": 138,
+        "unitPrice": 1990,
+        "totalPrice": 274620.0
+      },
+      {
+        "code": "ซื้อหนังสือ3zeed",
+        "qty": 1,
+        "unitPrice": 199,
+        "totalPrice": 199.0
+      },
+      {
+        "code": "ค่าหนังสือ(ซื้อเพิ่ม)",
+        "qty": 3,
+        "unitPrice": 150,
+        "totalPrice": 450.0
+      },
+      {
+        "code": "ดอกเบี้ยเงินฝาก",
+        "qty": 0,
+        "unitPrice": 38.55,
+        "totalPrice": 38.55
+      }
+    ],
+    "ads": [
+      {
+        "date": "21 มิ.ย. 2025",
+        "description": "ค่าแอด 13-20 มิย",
+        "price": 14532.0
+      },
+      {
+        "date": "9 ก.ค. 2025",
+        "description": "ค่าแอด 21-30 มิย",
+        "price": 19868.0
+      },
+      {
+        "date": "11 กค 2025",
+        "description": "ค่าแอด 1-10 กค",
+        "price": 11673.0
+      },
+      {
+        "date": "21 กค 2025",
+        "description": "ค่าแอด 11-20 กค",
+        "price": 14426.0
+      },
+      {
+        "date": "1 สค 2025",
+        "description": "ค่าแอด 21-31 กค",
+        "price": 15771.0
+      },
+      {
+        "date": "11 กย 2025",
+        "description": "ค่าแอด 4-10 กย",
+        "price": 4816.4
+      },
+      {
+        "date": "21 กย 2025",
+        "description": "ค่าแอด 11-20 กย",
+        "price": 5103.9
+      },
+      {
+        "date": "1 ตต 2025",
+        "description": "ค่าแอด 21-30 กย",
+        "price": 5617.5
+      },
+      {
+        "date": "11 ตค 2025",
+        "description": "ค่าแอด 1-10 ตค",
+        "price": 6287.16
+      },
+      {
+        "date": "21ตค 2025",
+        "description": "ค่าแอด 11-20 ตค",
+        "price": 14519.9
+      },
+      {
+        "date": "1 พย 2025",
+        "description": "ค่าแอด 21-31 พย",
+        "price": 16039.3
+      },
+      {
+        "date": "11 พย 2025",
+        "description": "ค่าแอด 1-10 พย",
+        "price": 17087.9
+      },
+      {
+        "date": "18 พย 2025",
+        "description": "ค่าแอด 11-17 พย",
+        "price": 10139.0
+      }
+    ],
+    "expenses": [
+      {
+        "date": "13/มิ.ย./68",
+        "description": "คลิป/โปสเตอร์ to the star 2025",
+        "price": 1200.0,
+        "note": "ทริป 200"
+      },
+      {
+        "date": "30 มิย 2025",
+        "description": "หนังสือzap+zeed อย่างละ 100 เล่ม",
+        "price": 20009.0,
+        "note": ""
+      },
+      {
+        "date": "30 มิย 2025",
+        "description": "ค่าส่งหนังสือจากโรงงาน (6กล่อง)",
+        "price": 870.0,
+        "note": ""
+      },
+      {
+        "date": "4 กค 2025",
+        "description": "ค่าส่งรอบ 1",
+        "price": 660.0,
+        "note": "14 บ้าน"
+      },
+      {
+        "date": "4 กค 2025",
+        "description": "ซองกระดาษ + พลาสติกห่อ",
+        "price": 70.0,
+        "note": "บ้านละ 5 บาท"
+      },
+      {
+        "date": "13 ก.ค. 2025",
+        "description": "ค่าส่งรอบ 2",
+        "price": 443.0,
+        "note": "11 บ้าน"
+      },
+      {
+        "date": "13 ก.ค. 2025",
+        "description": "ซองกระดาษ + พลาสติกห่อ",
+        "price": 55.0,
+        "note": "บ้านละ 5 บาท"
+      },
+      {
+        "date": "18 ก.ค. 2025",
+        "description": "ค่ายิงแอด (น้องบอล)",
+        "price": 3000.0,
+        "note": ""
+      },
+      {
+        "date": "18 ก.ค. 2025",
+        "description": "ทริป น้องทำปกหนังสือ",
+        "price": 200.0,
+        "note": ""
+      },
+      {
+        "date": "19 ก.ค. 2025",
+        "description": "ค่าส่งรอบ 3",
+        "price": 151.0,
+        "note": "5 บ้าน"
+      },
+      {
+        "date": "19 ก.ค.2025",
+        "description": "ค่าส่งรอบ 4",
+        "price": 215.0,
+        "note": "5 บ้าน"
+      },
+      {
+        "date": "19 ก.ค. 2025",
+        "description": "ซองกระดาษ + พลาสติกห่อ",
+        "price": 45.0,
+        "note": "รอบ 3+4"
+      },
+      {
+        "date": "1 สค 2025",
+        "description": "ค่าส่งรอบ 5+6",
+        "price": 443.0,
+        "note": "13 บ้าน"
+      },
+      {
+        "date": "1 สค 2025",
+        "description": "ซองกระดาษ + พลาสติกห่อ 5-7",
+        "price": 85.0,
+        "note": "บ้านละ 5 บาท"
+      },
+      {
+        "date": "21 สค 68",
+        "description": "ค่าทำ VDO",
+        "price": 1200.0,
+        "note": ""
+      },
+      {
+        "date": "8 กย 68",
+        "description": "ค่าทำภาพ ads",
+        "price": 400.0,
+        "note": ""
+      },
+      {
+        "date": "8 ตค 68",
+        "description": "ค่ายิงแอด (น้องบอล)",
+        "price": 3000.0,
+        "note": ""
+      },
+      {
+        "date": "9/10/2025",
+        "description": "ค่าส่ง 3zeed รอบ 1",
+        "price": 529.0,
+        "note": "รวมซอง"
+      },
+      {
+        "date": "9/10/2025",
+        "description": "ค่าส่ง 3zeed รอบ 2",
+        "price": 634.0,
+        "note": "รวมซอง"
+      },
+      {
+        "date": "9/10/2025",
+        "description": "ค่าของรางวัล",
+        "price": 872.0,
+        "note": ""
+      },
+      {
+        "date": "9/10/2025",
+        "description": "ค่าส่ง + ค่ากล่องของรางวัล+ส่งรอบ3",
+        "price": 492.0,
+        "note": "ถึง G42"
+      },
+      {
+        "date": "9/10/2025",
+        "description": "ค่าชุดถ่ายแอด",
+        "price": 1658.5,
+        "note": ""
+      },
+      {
+        "date": "20/ตค/2025",
+        "description": "mars moon",
+        "price": 1380.0,
+        "note": ""
+      },
+      {
+        "date": "20/ตค/2025",
+        "description": "ความทรงจำคาเฟ่",
+        "price": 725.0,
+        "note": ""
+      },
+      {
+        "date": "29/ตค/2025",
+        "description": "ค่าส่ง 3zeed รอบ 4",
+        "price": 477.0,
+        "note": "ถึง G64"
+      },
+      {
+        "date": "1 พ.ย. 2025",
+        "description": "ค่าส่งรอบ 5+6",
+        "price": 184.0,
+        "note": "ถึง G68"
+      },
+      {
+        "date": "8 พ.ย. 2025",
+        "description": "หนังสือ30 + ส่ง +ซอง",
+        "price": 4655.0,
+        "note": "ร้านเพิ่มพูล"
+      },
+      {
+        "date": "8 พ.ย. 2025",
+        "description": "หนังสือเพิ่มเติม 6 เล่ม +ส่ง+ซอง",
+        "price": 888.0,
+        "note": "ร้้านเพิ่มพูล"
+      },
+      {
+        "date": "12 พ.ย. 2025",
+        "description": "หนังสือ 50 เล่ม",
+        "price": 4409.5,
+        "note": "ร้านพี่ตี๋"
+      },
+      {
+        "date": "12 พ.ย. 2025",
+        "description": "ค่าส่งหนังสือ (G105-G120)",
+        "price": 526.0,
+        "note": ""
+      },
+      {
+        "date": "10 พ.ย. 2025",
+        "description": "กราฟฟิกโปรเจคยานแม่",
+        "price": 600.0,
+        "note": ""
+      },
+      {
+        "date": "13 พ.ย. 2025",
+        "description": "ค่ายิงแอด (น้องบอล)",
+        "price": 3000.0,
+        "note": ""
+      },
+      {
+        "date": "13 ธ.ค. 2025",
+        "description": "โปสเตอร์ 3 za",
+        "price": 200.0,
+        "note": ""
+      },
+      {
+        "date": "21 ธ.ค. 2025",
+        "description": "รางวัล (MM กล่องสุ่ม)+ค่าส่ง",
+        "price": 963.0,
+        "note": "648/315"
+      },
+      {
+        "date": "21 ธ.ค. 2025",
+        "description": "Vat",
+        "price": 9332.67,
+        "note": "2.10%"
+      }
+    ],
+    "distributions": [
+      {
+        "date": "21 กค 2025",
+        "perPerson": 10000.0,
+        "total": 30000.0,
+        "note": "แบ่งคนละ 10,000"
+      },
+      {
+        "date": "11 กย 68",
+        "perPerson": 10000.0,
+        "total": 30000.0,
+        "note": "แบ่งคนละ 10,000"
+      },
+      {
+        "date": "9/10/2025",
+        "perPerson": 10000.0,
+        "total": 30000.0,
+        "note": "แบ่งคนละ 10,000"
+      },
+      {
+        "date": "1 พ.ย. 2025",
+        "perPerson": 18000.0,
+        "total": 54000.0,
+        "note": "แบ่่งคนละ 18,000"
+      },
+      {
+        "date": "13 พ.ย. 2025",
+        "perPerson": 20000.0,
+        "total": 60000.0,
+        "note": "แบ่งคนละ 20,000"
+      },
+      {
+        "date": "21 ธ.ค. 2025",
+        "perPerson": 6000.0,
+        "total": 18000.0,
+        "note": "แบ่งคนละ 6000"
+      }
+    ],
+    "stock": [
+      {
+        "bookCode": "3zap",
+        "received": 100
+      },
+      {
+        "bookCode": "3zeed",
+        "received": 50
+      }
+    ]
+  },
+  "3COOL_2568": {
+    "sales": [
+      {
+        "code": "D (3cool)",
+        "qty": 214,
+        "unitPrice": 999,
+        "totalPrice": 213786.0
+      }
+    ],
+    "ads": [
+      {
+        "date": "1 เม.ย. 2025",
+        "description": "ค่าแอด 24-31 มีค",
+        "price": 13736.49
+      },
+      {
+        "date": "11 เม.ย. 2025",
+        "description": "ค่าแอด 1-10 เมย",
+        "price": 20293.42
+      },
+      {
+        "date": "11 เม.ย. 2025",
+        "description": "จ้างยิง เมย",
+        "price": 3000.0
+      },
+      {
+        "date": "21 เม.ย. 2025",
+        "description": "ค่าแอด 11-20 เมย",
+        "price": 22728.31
+      },
+      {
+        "date": "24 เม.ย. 2025",
+        "description": "ค่าแอด 21-23",
+        "price": 8275.16
+      }
+    ],
+    "expenses": [
+      {
+        "date": "25 มี.ค. 2025",
+        "description": "ทำภาพ แอด ปฏิทิน",
+        "price": 200.0,
+        "note": ""
+      },
+      {
+        "date": "11 เม.ย. 2025",
+        "description": "ค่าของรางวัล+ค่าส่ง",
+        "price": 2229.0,
+        "note": ""
+      },
+      {
+        "date": "18 เม.ย. 2025",
+        "description": "Zoom 1 เดือน",
+        "price": 4012.5,
+        "note": ""
+      },
+      {
+        "date": "21 เม.ย. 2025",
+        "description": "ค่ารางวัลห้องทั่วไป",
+        "price": 523.0,
+        "note": ""
+      },
+      {
+        "date": "24 เม.ย. 2025",
+        "description": "จ้างทำ Congrat ห้องทั่วไป",
+        "price": 2200.0,
+        "note": "ทริป 200"
+      },
+      {
+        "date": "24 เม.ย. 2025",
+        "description": "ค่าส่งของรางวัล",
+        "price": 377.0,
+        "note": ""
+      },
+      {
+        "date": "24 เม.ย. 2025",
+        "description": "ภาษี 0-218781",
+        "price": 4593.1,
+        "note": "2.10%"
+      }
+    ],
+    "distributions": [
+      {
+        "date": "1 เม.ย. 2025",
+        "perPerson": 10000.0,
+        "total": 30000.0,
+        "note": "แบ่งคนละ 10,000"
+      },
+      {
+        "date": "21 เม.ย. 2025",
+        "perPerson": 30000.0,
+        "total": 90000.0,
+        "note": "แบ่งคนละ 30,000"
+      }
+    ],
+    "stock": []
+  },
+  "3za_2568": {
+    "sales": [
+      {
+        "code": "1A",
+        "qty": 284,
+        "unitPrice": 999,
+        "totalPrice": 283716.0
+      },
+      {
+        "code": "1B",
+        "qty": 365,
+        "unitPrice": 999,
+        "totalPrice": 364635.0
+      },
+      {
+        "code": "1C",
+        "qty": 70,
+        "unitPrice": 1790,
+        "totalPrice": 125300.0
+      },
+      {
+        "code": "4A",
+        "qty": 135,
+        "unitPrice": 999,
+        "totalPrice": 134865.0
+      },
+      {
+        "code": "4B",
+        "qty": 174,
+        "unitPrice": 999,
+        "totalPrice": 173826.0
+      },
+      {
+        "code": "4C",
+        "qty": 29,
+        "unitPrice": 1790,
+        "totalPrice": 51910.0
+      },
+      {
+        "code": "D (3cool)",
+        "qty": 0,
+        "unitPrice": 0.0,
+        "totalPrice": 0.0
+      }
+    ],
+    "ads": [
+      {
+        "date": "11 ม.ค. 2025",
+        "description": "5-10 มค ค่าAds",
+        "price": 5943.34
+      },
+      {
+        "date": "11 ม.ค. 2025",
+        "description": "11-20 มค ค่า ads",
+        "price": 16330.34
+      },
+      {
+        "date": "1 ก.พ. 2025",
+        "description": "21-31 มค ค่าแอด",
+        "price": 19898.85
+      },
+      {
+        "date": "11 ก.พ. 2025",
+        "description": "1-10 กพ ค่าแอด",
+        "price": 20406.4
+      },
+      {
+        "date": "11 ก.พ. 2025",
+        "description": "จ้างยิง 2 เดือน",
+        "price": 6000.0
+      },
+      {
+        "date": "21 ก.พ. 2025",
+        "description": "11-20 กพ 68",
+        "price": 21691.53
+      },
+      {
+        "date": "1 มี.ค. 2025",
+        "description": "แอด 21-28 กพ",
+        "price": 19697.74
+      },
+      {
+        "date": "10 มี.ค. 2025",
+        "description": "แอด 1-9 มีค",
+        "price": 27647.97
+      },
+      {
+        "date": "16 มี.ค. 2025",
+        "description": "ค่าจ้างยิงแอด",
+        "price": 3000.0
+      },
+      {
+        "date": "21 มี.ค. 2025",
+        "description": "ค่าแอด 10-20 มีค",
+        "price": 36087.06
+      },
+      {
+        "date": "24 มี.ค. 2025",
+        "description": "ค่าแอด 21-23 มีค",
+        "price": 14983.41
+      }
+    ],
+    "expenses": [
+      {
+        "date": "14 ม.ค. 2025",
+        "description": "จ้างทำภาพ รีวิว",
+        "price": 800.0,
+        "note": ""
+      },
+      {
+        "date": "24 ม.ค. 2025",
+        "description": "จ้างทำใบปลิว Canva",
+        "price": 200.0,
+        "note": ""
+      },
+      {
+        "date": "10 ก.พ. 2025",
+        "description": "ค่ารางวัลรีวิว 3zeed",
+        "price": 1566.0,
+        "note": ""
+      },
+      {
+        "date": "11 ก.พ. 2025",
+        "description": "ภาษี แสนที่1-2",
+        "price": 4200.0,
+        "note": ""
+      },
+      {
+        "date": "11 ก.พ. 2025",
+        "description": "Poster 3SA ห้องทั่วไป",
+        "price": 500.0,
+        "note": ""
+      },
+      {
+        "date": "1 มี.ค. 2025",
+        "description": "ภาษี แสนที่ 3-4",
+        "price": 4200.0,
+        "note": ""
+      },
+      {
+        "date": "1 มี.ค. 2025",
+        "description": "สมัคร zoom 2 ac",
+        "price": 8025.0,
+        "note": ""
+      },
+      {
+        "date": "4 มี.ค. 2025",
+        "description": "ทำปฏิทินห้องทั่วไป",
+        "price": 500.0,
+        "note": ""
+      },
+      {
+        "date": "10 มี.ค. 2025",
+        "description": "หักภาษี แสนที่ 5-6",
+        "price": 4200.0,
+        "note": ""
+      },
+      {
+        "date": "15 มี.ค. 2025",
+        "description": "ทำโปสเตอร์ห้องทั่วไป",
+        "price": 200.0,
+        "note": ""
+      },
+      {
+        "date": "19 มี.ค. 2025",
+        "description": "VDO +ภาพ 3cool",
+        "price": 400.0,
+        "note": ""
+      },
+      {
+        "date": "21 มี.ค. 2025",
+        "description": "ภาษีแสนที่ 7-10",
+        "price": 8400.0,
+        "note": ""
+      },
+      {
+        "date": "23 มี.ค. 2025",
+        "description": "ค่าทำโปสเตอร์ congrats 4 เพจ",
+        "price": 2000.0,
+        "note": ""
+      },
+      {
+        "date": "24 มี.ค. 2025",
+        "description": "ภาษีแสนที่ 11",
+        "price": 2200.0,
+        "note": ""
+      },
+      {
+        "date": "25 มี.ค. 2025",
+        "description": "โอนคืน 4-3sa + 1-3cool",
+        "price": 4995.0,
+        "note": ""
+      }
+    ],
+    "distributions": [
+      {
+        "date": "20 ม.ค. 2025",
+        "perPerson": 15000.0,
+        "total": 45000.0,
+        "note": "แบ่งเงิน คนละ 15k"
+      },
+      {
+        "date": "1 ก.พ. 2025",
+        "perPerson": 20000.0,
+        "total": 60000.0,
+        "note": "แบ่งคนละ 20000"
+      },
+      {
+        "date": "11 ก.พ. 2025",
+        "perPerson": 10000.0,
+        "total": 30000.0,
+        "note": "แบ่งคนละ 10,000"
+      },
+      {
+        "date": "20 ก.พ. 2025",
+        "perPerson": 30000.0,
+        "total": 90000.0,
+        "note": "แบ่งคนละ 30,000"
+      },
+      {
+        "date": "1 มี.ค. 2025",
+        "perPerson": 30000.0,
+        "total": 90000.0,
+        "note": "แบ่งคนละ 30,000"
+      },
+      {
+        "date": "4 มี.ค. 2025",
+        "perPerson": 30000.0,
+        "total": 90000.0,
+        "note": "แบ่งคนละ 30,000"
+      },
+      {
+        "date": "10 มี.ค. 2025",
+        "perPerson": 40000.0,
+        "total": 120000.0,
+        "note": "แบ่งคนละ 40,000"
+      },
+      {
+        "date": "21 มี.ค. 2025",
+        "perPerson": 110000.0,
+        "total": 330000.0,
+        "note": "แบ่งคนละ 110,000"
+      },
+      {
+        "date": "24 มี.ค. 2025",
+        "perPerson": 20652.546666666665,
+        "total": 61957.64,
+        "note": "ส่วนแบ่ง"
+      }
+    ],
+    "stock": []
+  }
+}

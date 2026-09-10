@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script>
+    (function() {
+      function getLiffAction() {
+        const urlParams = new URLSearchParams(window.location.search);
+        let action = urlParams.get("action");
+        if (action) return action;
+
+        const liffState = urlParams.get("liff.state");
+        if (liffState) {
+          const decodedState = decodeURIComponent(liffState);
+          const qIndex = decodedState.indexOf("?");
+          if (qIndex !== -1) {
+            const stateParams = new URLSearchParams(decodedState.substring(qIndex));
+            action = stateParams.get("action");
+            if (action) return action;
+          }
+        }
+
+        const hash = window.location.hash;
+        if (hash) {
+          const qIndex = hash.indexOf("?");
+          if (qIndex !== -1) {
+            const hashParams = new URLSearchParams(hash.substring(qIndex));
+            action = hashParams.get("action");
+            if (action) return action;
+          }
+          const stateMatch = hash.match(/liff\.state=([^&]+)/);
+          if (stateMatch) {
+            const decodedState = decodeURIComponent(stateMatch[1]);
+            const qIdx = decodedState.indexOf("?");
+            if (qIdx !== -1) {
+              const stateParams = new URLSearchParams(decodedState.substring(qIdx));
+              action = stateParams.get("action");
+              if (action) return action;
+            }
+          }
+        }
+        return null;
+      }
+
+      const action = getLiffAction();
+      if (action) {
+        // Redirect to standalone LIFF form immediately with cache-busting
+        const search = window.location.search || "?";
+        const separator = (search === "?" || search === "") ? "" : "&";
+        window.location.replace("liff.html" + search + separator + "action=" + action + "&v=" + Date.now());
+      }
+    })();
+  </script>
+  <title>STA69 Ledger Hub - ระบบบันทึกรายรับรายจ่ายปันผลย้อนหลัง</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <!-- Chart.js CDN for stunning visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <!-- LINE Front-end Framework (LIFF) SDK -->
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" defer></script>
+</head>
+<body>
+  <!-- Background Glow Effects -->
+  <div class="bg-glow-wrapper" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; overflow: hidden; pointer-events: none; z-index: -2;">
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="glow-orb orb-3"></div>
+    <div class="glow-orb orb-4"></div>
+  </div>
+  <!-- Login Overlay -->
+  <div id="loginOverlay" class="login-overlay">
+    <div class="login-card glass-card">
+      <div class="header-logo" style="justify-content: center; margin-bottom: 8px;">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="logo-text" style="text-align: left;">
+          <h1>3 ZAP 3 WICHA</h1>
+          <span class="sub-text">Interactive Ledger Hub</span>
+        </div>
+      </div>
+      <form id="loginForm" class="login-form">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <input type="text" id="loginAdminName" class="glass-input" placeholder="ชื่อผู้ทำรายการ / ชื่อแอดมิน" required>
+        </div>
+        <div class="form-group" style="position: relative;">
+          <input type="password" id="loginPassword" class="glass-input" placeholder="รหัสผ่านเข้าใช้งาน" required style="padding-right: 40px;">
+          <button type="button" id="toggleLoginPasswordBtn" class="pass-toggle-btn" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" id="eyeIconOpen"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" id="eyeIconClose" style="display: none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+          </button>
+        </div>
+        <div id="loginErrorMsg" class="error-msg" style="color: #f87171; font-size: 12px; min-height: 18px; text-align: center; margin-top: -8px;"></div>
+        <button type="submit" class="glass-btn primary" style="width: 100%; justify-content: center; margin-top: 10px;">เข้าสู่ระบบ</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="app-container">
+    <!-- Navigation Header -->
+    <header class="app-header">
+      <div class="header-logo">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="logo-text">
+          <h1>3 ZAP 3 WICHA</h1>
+          <span class="sub-text">Interactive Ledger Hub</span>
+        </div>
+      </div>
+      
+      <!-- Combined Selection Bar for Projects and Years -->
+      <div class="header-controls">
+        <div class="control-group">
+          <label for="projectSelect">เลือกงาน / โปรเจกต์ประจำปี</label>
+          <div class="select-wrapper">
+            <select id="projectSelect" class="glass-select" style="min-width: 190px;"></select>
+            <button id="addProjectBtn" class="icon-btn-glow" title="เพิ่มโปรเจกต์ประจำปีใหม่">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+            <button id="deleteProjectBtn" class="icon-btn-glow" title="ลบโปรเจกต์และปีปัจจุบัน" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05); padding: 8px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+            </button>
+            <button id="toggleSettingsBtn" class="icon-btn-glow toggle-btn-mobile" title="เปิด/ปิดการตั้งค่าและฐานข้อมูล" style="color: #4f46e5; border-color: rgba(99, 102, 241, 0.25); background: rgba(99, 102, 241, 0.06); padding: 8px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </button>
+          </div>
+        </div>
+        
+        <div class="database-actions">
+          <button id="syncSheetsBtn" class="glass-btn primary" title="ดึงข้อมูลโดยตรงจาก Google Sheets">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+            ดึงข้อมูลจาก Google Sheets
+          </button>
+          <button id="historyBtn" class="glass-btn secondary" title="ดูประวัติการบันทึกข้อมูลย้อนหลังตามวันเวลาและผู้ทำรายการ">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            📜 ประวัติการบันทึก
+          </button>
+          <button id="exportBackupBtn" class="glass-btn secondary" title="ดาวน์โหลดไฟล์สำรองข้อมูล JSON">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            สำรองข้อมูล
+          </button>
+          <button id="lineSettingsBtn" class="glass-btn secondary" title="ตั้งค่าระบบเชื่อมต่อ LINE และคัดลอกลิงก์เพิ่มเพื่อน">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+            ตั้งค่า LINE
+          </button>
+          <button id="downloadExcelBtn" class="glass-btn secondary" title="ดาวน์โหลดบัญชีทั้งหมดเป็นไฟล์ Excel (.xlsx) แยกแท็บ">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            ดาวน์โหลด Excel
+          </button>
+          <button id="changePasswordBtn" class="glass-btn secondary" title="ตั้งค่ารหัสผ่านเว็บและรหัสผ่านบอต LINE">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            ตั้งค่ารหัสผ่านระบบ
+          </button>
+          <button id="carryoverBtn" class="glass-btn secondary" title="โอนย้ายยอดเงินคงเหลือไปยังโปรเจกต์อื่น">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+            ยกยอดคงเหลือ
+          </button>
+          <button id="telegramSettingsBtn" class="glass-btn secondary" title="ตั้งค่าการแจ้งเตือน Telegram">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg>
+            ตั้งค่า Telegram
+          </button>
+          <button id="resetDemoBtn" class="glass-btn danger" title="รีเซ็ตเป็นข้อมูลเริ่มต้น">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+            รีเซ็ต
+          </button>
+          <input type="file" id="backupFileInput" accept=".json" style="display: none;">
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Dashboard Section -->
+    <main class="dashboard-grid">
+      <!-- KPI Metric Cards -->
+      <section class="kpi-container top-row">
+        <!-- Revenue Card -->
+        <div class="kpi-card revenue">
+          <div class="kpi-header">
+            <span class="kpi-title">รายรับรวม</span>
+            <div class="kpi-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            </div>
+          </div>
+          <div class="kpi-value" id="valTotalRevenue">0.00</div>
+          <div class="kpi-footer" id="valCarryoverFooter" style="display: none; margin-top: 8px;">
+            <span class="kpi-subtext text-success" id="valCarryoverText" style="font-size: 0.75rem; color: #10b981; font-weight: 500;">ยอดยกมา: 0.00 ฿</span>
+          </div>
+        </div>
+
+        <!-- Ads Cost Card -->
+        <div class="kpi-card ads">
+          <div class="kpi-header">
+            <span class="kpi-title">ค่าโฆษณารวม</span>
+            <div class="kpi-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 6l-9.5 9.5-5-5L1 18"></path><polyline points="17 6 23 6 23 12"></polyline></svg>
+            </div>
+          </div>
+          <div class="kpi-value" id="valTotalAds">0.00</div>
+          <div class="kpi-footer">
+            <div class="ratio-progress-bar">
+              <div class="ratio-fill" id="ratioAdsFill" style="width: 0%"></div>
+            </div>
+            <span class="kpi-subtext text-warning" id="valRatioAds">คิดเป็น 0.00% ของรายรับ</span>
+          </div>
+        </div>
+
+        <!-- Other Expenses Card -->
+        <div class="kpi-card expenses">
+          <div class="kpi-header">
+            <span class="kpi-title">รายจ่ายอื่นๆ</span>
+            <div class="kpi-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="12" y1="4" x2="12" y2="20"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>
+            </div>
+          </div>
+          <div class="kpi-value" id="valTotalExpenses">0.00</div>
+          <div class="kpi-footer">
+            <div class="ratio-progress-bar">
+              <div class="ratio-fill" id="ratioExpensesFill" style="width: 0%"></div>
+            </div>
+            <span class="kpi-subtext text-warning" id="valRatioExpenses">คิดเป็น 0.00% ของรายรับ</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="kpi-container bottom-row">
+        <!-- Distributed Profit Card -->
+        <div class="kpi-card distributions">
+          <div class="kpi-header">
+            <span class="kpi-title">แบ่งแล้ว</span>
+            <div class="kpi-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            </div>
+          </div>
+          <div class="kpi-value" id="valTotalDistributed">0.00</div>
+          <div class="kpi-footer text-purple">
+            <div class="ratio-progress-bar">
+              <div class="ratio-fill" id="ratioDistributedFill" style="width: 0%"></div>
+            </div>
+            <span class="kpi-subtext text-warning" id="valRatioDistributed">คิดเป็น 0.00% ของรายรับ</span>
+            <span class="kpi-subtext" id="valDistributedPerPerson">แบ่งคนละ 0.00 บาท</span>
+          </div>
+        </div>
+
+        <!-- Net Balance Card -->
+        <div class="kpi-card balance">
+          <div class="kpi-header">
+            <span class="kpi-title">คงเหลือสุทธิ</span>
+            <div class="kpi-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            </div>
+          </div>
+          <div class="kpi-value" id="valRemainingBalance">0.00</div>
+          <div class="kpi-footer">
+            <div class="ratio-progress-bar">
+              <div class="ratio-fill" id="ratioBalanceFill" style="width: 0%"></div>
+            </div>
+            <span class="kpi-subtext text-warning" id="valRatioBalance">คิดเป็น 0.00% ของรายรับ</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Charts & Inventory Section -->
+      <section class="insights-container">
+        <!-- Chart Canvas Card -->
+        <div class="glass-card chart-card">
+          <div class="card-header">
+            <h2>วิเคราะห์สัดส่วนการเงิน (Financial Allocation)</h2>
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+              <div class="chart-types">
+                <button id="btnChartPie" class="tab-btn active">วงกลม</button>
+                <button id="btnChartBar" class="tab-btn">แท่งเปรียบเทียบ</button>
+              </div>
+              <button id="btnCompareCourses" class="glass-btn primary" style="padding: 6px 12px; font-size: 12px; height: 32px; display: flex; align-items: center; gap: 6px; border-radius: 8px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                เปรียบเทียบคอร์ส/ปี
+              </button>
+            </div>
+          </div>
+          <div class="chart-wrapper" style="position: relative;">
+            <canvas id="financialChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Detailed Tables Tabbed Layout -->
+      <section class="data-tables-container glass-card">
+        <div class="tables-tabs">
+          <button class="table-tab-btn active" data-target="tabSales">ยอดขายคอร์ส</button>
+          <button class="table-tab-btn" data-target="tabAds">ประวัติค่าแอด</button>
+          <button class="table-tab-btn" data-target="tabExpenses">รายจ่ายอื่นๆ</button>
+          <button class="table-tab-btn" data-target="tabDistributions">บันทึกการปันผล</button>
+        </div>
+
+        <div class="tab-content-wrapper">
+          <!-- Sales Tab -->
+          <div class="tab-panel active" id="tabSales">
+            <div class="panel-actions">
+              <div class="search-bar">
+                <input type="text" id="searchSales" class="glass-input" placeholder="ค้นหารหัสคอร์ส...">
+              </div>
+              <button id="btnAddSale" class="glass-btn primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                เพิ่มออเดอร์ขาย
+              </button>
+            </div>
+            <div class="table-responsive">
+              <table class="glass-table">
+                <thead>
+                  <tr>
+                    <th>คอร์ส</th>
+                    <th>จำนวน</th>
+                    <th>ราคา/หน่วย</th>
+                    <th>ราคารวม</th>
+                    <th class="actions-col">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="tableSalesBody">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Ads Tab -->
+          <div class="tab-panel" id="tabAds">
+            <div class="panel-actions">
+              <div class="search-bar">
+                <input type="text" id="searchAds" class="glass-input" placeholder="ค้นหาประวัติแอด...">
+              </div>
+              <button id="btnAddAd" class="glass-btn primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                เพิ่มยอดค่าแอด
+              </button>
+            </div>
+            <div class="table-responsive">
+              <table class="glass-table">
+                <thead>
+                  <tr>
+                    <th>ว/ด/ป</th>
+                    <th>รายการ</th>
+                    <th>ค่าแอด</th>
+                    <th class="actions-col">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="tableAdsBody">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Expenses Tab -->
+          <div class="tab-panel" id="tabExpenses">
+            <div class="panel-actions">
+              <div class="search-bar">
+                <input type="text" id="searchExpenses" class="glass-input" placeholder="ค้นหารายการ...">
+              </div>
+              <button id="btnAddExpense" class="glass-btn primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                เพิ่มรายจ่ายอื่นๆ
+              </button>
+            </div>
+            <div class="table-responsive">
+              <table class="glass-table">
+                <thead>
+                  <tr>
+                    <th>ว/ด/ป</th>
+                    <th>รายการ</th>
+                    <th>ยอดเงิน</th>
+                    <th>หมายเหตุ</th>
+                    <th class="actions-col">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="tableExpensesBody">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Distributions Tab -->
+          <div class="tab-panel" id="tabDistributions">
+            <div class="panel-actions">
+              <div class="search-bar">
+                <input type="text" id="searchDistributions" class="glass-input" placeholder="ค้นหาการปันผล...">
+              </div>
+              <button id="btnAddDistribution" class="glass-btn primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                บันทึกการปันผลใหม่
+              </button>
+            </div>
+            <div class="table-responsive">
+              <table class="glass-table">
+                <thead>
+                  <tr>
+                    <th>ว/ด/ป</th>
+                    <th>ต่อคน</th>
+                    <th>ยอดรวม</th>
+                    <th>โน้ต</th>
+                    <th class="actions-col">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="tableDistributionsBody">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. Book Stock Status & History (Moved to bottom) -->
+      <section class="bottom-stock-section" style="width: 100%;">
+        <div class="glass-card stock-card" id="stockCard">
+          <div class="card-header">
+            <h2>สต็อกหนังสือคงเหลือ (Book Inventory Status)</h2>
+            <div style="display: flex; gap: 8px;">
+              <button id="btnAddBookType" class="glass-btn secondary btn-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                เพิ่มชนิดหนังสือ
+              </button>
+              <button id="btnReceiveStock" class="glass-btn primary btn-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                รับหนังสือเข้า
+              </button>
+            </div>
+          </div>
+          <div class="stock-list-container" id="stockList">
+            <!-- Dynamic Stock Progress Bars will be generated here -->
+            <div class="empty-state">ไม่มีการเปิดบันทึกสต็อกในโปรเจกต์นี้</div>
+          </div>
+          
+          <!-- Stock History Log Section -->
+          <div class="stock-history-section" style="margin-top: 24px; border-top: 1px solid rgba(15, 23, 42, 0.08); padding-top: 20px;">
+            <h3 style="font-family: var(--font-title); font-size: 15px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary);">ประวัติการรับหนังสือเข้าสต็อก (Stock Receipt History)</h3>
+            <div class="table-responsive">
+              <table class="glass-table">
+                <thead>
+                  <tr>
+                    <th>ว/ด/ป</th>
+                    <th>หนังสือ</th>
+                    <th>จำนวน</th>
+                    <th class="actions-col">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="tableStockHistoryBody">
+                  <!-- Dynamic stock history logs will be rendered here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Detailed Course Comparison Section -->
+    <div id="comparisonView" style="display: none;" class="glass-card">
+      <!-- Header -->
+      <div class="card-header" style="margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <h2 style="font-size: 22px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="22" height="22"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+            เปรียบเทียบผลการดำเนินงาน รายโปรเจกต์ / รายปี
+          </h2>
+          <span class="sub-text" style="color: var(--text-secondary); font-size: 13px; margin-top: 4px; display: block;">วิเคราะห์เปรียบเทียบสัดส่วนรายรับ รายจ่าย และกำไรสุทธิระหว่างโปรเจกต์ต่าง ๆ ได้อย่างอิสระ</span>
+        </div>
+        <button id="btnBackToDashboard" class="glass-btn secondary" style="display: flex; align-items: center; gap: 8px; border-radius: 10px; height: 38px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          ย้อนกลับไปหน้าหลัก
+        </button>
+      </div>
+
+      <!-- Filters Group -->
+      <div class="glass-card" style="margin-bottom: 24px; padding: 20px; background: rgba(255, 255, 255, 0.4); border-color: rgba(15, 23, 42, 0.04);">
+        <h3 style="margin-top: 0; margin-bottom: 16px; font-size: 15px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          เลือกปี / โปรเจกต์ที่ต้องการเปรียบเทียบข้อมูล
+        </h3>
+        <div style="margin-bottom: 15px;">
+          <div id="compareYearContainer" class="compare-checkbox-container" style="max-height: 200px;">
+            <!-- Dynamically populated year checkboxes -->
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end;">
+          <button id="btnRunComparison" class="glass-btn primary" style="padding: 10px 24px; border-radius: 10px; display: flex; align-items: center; gap: 8px; font-weight: 500;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            เริ่มเปรียบเทียบข้อมูล
+          </button>
+        </div>
+      </div>
+
+      <!-- Results Display Container -->
+      <div id="comparisonResults" style="display: none;">
+        <!-- Charts Grid -->
+        <div class="comparison-charts-grid">
+          <div class="glass-card" style="padding: 20px; background: rgba(255, 255, 255, 0.4); border-color: rgba(15, 23, 42, 0.04);">
+            <h3 style="margin-top: 0; font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px; display: flex; align-items: center; gap: 6px;">
+              📊 ยอดรายรับและรายจ่ายรวม (Total Revenue vs Total Expenses)
+            </h3>
+            <div class="chart-wrapper" style="position: relative; height: 320px;">
+              <canvas id="compareRevenueChart"></canvas>
+            </div>
+          </div>
+          <div class="glass-card" style="padding: 20px; background: rgba(255, 255, 255, 0.4); border-color: rgba(15, 23, 42, 0.04);">
+            <h3 style="margin-top: 0; font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px; display: flex; align-items: center; gap: 6px;">
+              💰 ยอดกำไรสุทธิรวม (Total Net Profit Performance)
+            </h3>
+            <div class="chart-wrapper" style="position: relative; height: 320px;">
+              <canvas id="compareProfitChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Numbers Details Table -->
+        <div class="glass-card" style="padding: 20px; background: rgba(255, 255, 255, 0.4); border-color: rgba(15, 23, 42, 0.04);">
+          <h3 style="margin-top: 0; font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px; display: flex; align-items: center; gap: 6px;">
+            📑 ตารางสรุปการเปรียบเทียบและจัดอันดับประสิทธิภาพรายโปรเจกต์
+          </h3>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>โปรเจกต์ (ปี)</th>
+                  <th style="text-align: right;">รายรับรวม</th>
+                  <th style="text-align: right;">รายจ่ายรวม</th>
+                  <th style="text-align: right;">กำไรสุทธิรวม</th>
+                  <th style="text-align: right;">ส่วนแบ่งหุ้นรวม</th>
+                  <th style="text-align: right;">คงเหลือสะสม</th>
+                  <th style="text-align: center;">อันดับ & ส่วนต่างเปรียบเทียบ</th>
+                </tr>
+              </thead>
+              <tbody id="compareTableBody">
+                <!-- Dynamically populated comparison rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="app-footer-text">
+      <span>STA69 Ledger Hub &copy; 2569-2570 | ออกแบบเพื่อความสะดวกในการจัดการบัญชีร่วมกัน</span>
+    </footer>
+  </div>
+
+  <!-- Dialog Modals -->
+
+  <!-- 1. Add/Edit Sale Modal -->
+  <dialog id="dlgSale" closedby="any" aria-labelledby="dlgSaleTitle">
+    <form method="dialog" class="glass-form">
+      <h2 id="dlgSaleTitle">บันทึกยอดยอดขายคอร์ส</h2>
+      <div style="font-size: 13px; font-weight: 700; color: #4f46e5; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1)); border: 1px solid rgba(99, 102, 241, 0.25); padding: 6px 12px; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px; margin-top: -8px; margin-bottom: 4px;">📌 ชื่องาน: <span class="active-project-name-display">STA70</span></div>
+      <div class="form-group">
+        <label for="saleCode">เลือกคอร์สเรียน / แก้ไขชื่อคอร์ส</label>
+        <div class="select-wrapper" style="display: flex; gap: 8px; align-items: center;">
+          <select id="saleCode" class="glass-select" style="flex: 1;" required autofocus></select>
+          <button type="button" id="btnEditCourseName" class="glass-btn secondary" title="พิมพ์แก้ไขชื่อคอร์สนี้" style="padding: 6px 12px; font-size: 12px; height: 38px; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; border-color: rgba(99, 102, 241, 0.3); color: #4f46e5;">
+            ✏️ แก้ไขชื่อ
+          </button>
+          <button type="button" id="btnAddCustomCourse" class="icon-btn-glow" title="เพิ่มคอร์สใหม่" style="color: #10b981; border-color: rgba(16, 185, 129, 0.25); background: rgba(16, 185, 129, 0.06); padding: 8px; height: 38px; width: 38px; min-width: 38px; display: flex; align-items: center; justify-content: center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+        </div>
+      </div>
+      <div class="form-group-row three-cols">
+        <div class="form-group">
+          <label for="saleQty">จำนวนคนสมัคร (คน)</label>
+          <input type="number" id="saleQty" class="glass-input" min="0" value="1" required>
+        </div>
+        <div class="form-group">
+          <label for="saleUnitPrice">ราคาต่อหน่วย (บาท)</label>
+          <input type="number" id="saleUnitPrice" class="glass-input" min="0" step="0.01" value="0" required>
+        </div>
+        <div class="form-group">
+          <label for="saleTotalPrice">ราคารวม (บาท)</label>
+          <input type="number" id="saleTotalPrice" class="glass-input" min="0" step="0.01" value="0" required>
+        </div>
+      </div>
+      <input type="hidden" id="editSaleIndex" value="-1">
+      <div class="form-actions">
+        <button type="button" id="btnDeleteSale" class="glass-btn danger" style="display: none; margin-right: auto;">ลบออเดอร์</button>
+        <button type="button" class="glass-btn secondary" onclick="document.getElementById('dlgSale').close()">ยกเลิก</button>
+        <button type="submit" class="glass-btn primary">บันทึกข้อมูล</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 2. Add/Edit Ad Modal -->
+  <dialog id="dlgAd" closedby="any" aria-labelledby="dlgAdTitle">
+    <form method="dialog" class="glass-form">
+      <h2 id="dlgAdTitle">บันทึกยอดค่าโฆษณา (Facebook/TikTok Ads)</h2>
+      <div style="font-size: 13px; font-weight: 700; color: #4f46e5; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1)); border: 1px solid rgba(99, 102, 241, 0.25); padding: 6px 12px; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px; margin-top: -8px; margin-bottom: 4px;">📌 ชื่องาน: <span class="active-project-name-display">STA70</span></div>
+      <div class="form-group">
+        <label for="adDate">ว/ด/ป</label>
+        <input type="date" id="adDate" class="glass-input" required>
+      </div>
+      <div class="form-group">
+        <label for="adDesc">รายการค่าโฆษณา</label>
+        <input type="text" id="adDesc" class="glass-input" placeholder="เช่น Ads 1-10 พ.ค. หรือ ค่าโฆษณาแคมเปญเปิดตัว" required autofocus>
+      </div>
+      <div class="form-group ad-range-selector-panel">
+        <span class="ad-range-title">เลือกช่วงวันที่จ่ายค่าแอดเพื่อสร้างรายการอัตโนมัติ:</span>
+        <div class="ad-range-controls">
+          <select id="adStartDay" class="glass-select ad-range-select"></select>
+          <span class="ad-range-label">ถึง</span>
+          <select id="adEndDay" class="glass-select ad-range-select"></select>
+          <select id="adMonth" class="glass-select ad-range-select month-select"></select>
+          <select id="adYear" class="glass-select ad-range-select year-select"></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="adPrice">จำนวนเงิน (บาท)</label>
+        <input type="number" id="adPrice" class="glass-input" min="0" step="0.01" value="0" required>
+      </div>
+      <div class="form-group">
+        <label for="adSlip">รูปภาพสลิปโอนเงิน (ไม่บังคับ, แนบได้หลายรูป)</label>
+        <div class="file-upload-wrapper">
+          <input type="file" id="adSlip" class="glass-input file-input" accept="image/*" multiple>
+          <div id="adSlipPreviewContainer" class="slip-preview-container" style="display: none;"></div>
+        </div>
+      </div>
+      <input type="hidden" id="editAdIndex" value="-1">
+      <div class="form-actions">
+        <button type="button" id="btnDeleteAd" class="glass-btn danger" style="display: none; margin-right: auto;">ลบค่าโฆษณา</button>
+        <button type="button" class="glass-btn secondary" onclick="document.getElementById('dlgAd').close()">ยกเลิก</button>
+        <button type="submit" class="glass-btn primary">บันทึกข้อมูล</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 3. Add/Edit Expense Modal -->
+  <dialog id="dlgExpense" closedby="any" aria-labelledby="dlgExpenseTitle">
+    <form method="dialog" class="glass-form">
+      <h2 id="dlgExpenseTitle">บันทึกค่าใช้จ่ายอื่นๆ</h2>
+      <div style="font-size: 13px; font-weight: 700; color: #4f46e5; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1)); border: 1px solid rgba(99, 102, 241, 0.25); padding: 6px 12px; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px; margin-top: -8px; margin-bottom: 4px;">📌 ชื่องาน: <span class="active-project-name-display">STA70</span></div>
+      <div class="form-group">
+        <label for="expDate">ว/ด/ป</label>
+        <input type="date" id="expDate" class="glass-input" required>
+      </div>
+      <div class="form-group">
+        <label for="expDesc">รายการรายจ่าย</label>
+        <input type="text" id="expDesc" class="glass-input" placeholder="เช่น ค่ากล่องพัสดุ 100 ซอง, ค่าต่ออายุบอท" required autofocus>
+      </div>
+      <div class="form-group">
+        <label for="expPrice">จำนวนเงิน (บาท)</label>
+        <input type="number" id="expPrice" class="glass-input" min="0" step="0.01" value="0" required>
+      </div>
+      <div class="form-group">
+        <label for="expNote">หมายเหตุ</label>
+        <input type="text" id="expNote" class="glass-input" placeholder="เช่น จ่ายแล้ว, แนบสลิปแล้ว">
+      </div>
+      <div class="form-group">
+        <label for="expSlip">รูปภาพสลิปโอนเงิน (ไม่บังคับ, แนบได้หลายรูป)</label>
+        <div class="file-upload-wrapper">
+          <input type="file" id="expSlip" class="glass-input file-input" accept="image/*" multiple>
+          <div id="expSlipPreviewContainer" class="slip-preview-container" style="display: none;"></div>
+        </div>
+      </div>
+      <input type="hidden" id="editExpenseIndex" value="-1">
+      <div class="form-actions">
+        <button type="button" id="btnDeleteExpense" class="glass-btn danger" style="display: none; margin-right: auto;">ลบรายจ่าย</button>
+        <button type="button" class="glass-btn secondary" onclick="document.getElementById('dlgExpense').close()">ยกเลิก</button>
+        <button type="submit" class="glass-btn primary">บันทึกข้อมูล</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 4. Add/Edit Distribution Modal -->
+  <dialog id="dlgDistribution" closedby="any" aria-labelledby="dlgDistTitle">
+    <form method="dialog" class="glass-form">
+      <h2 id="dlgDistTitle">บันทึกการปันผลกำไร</h2>
+      <div style="font-size: 13px; font-weight: 700; color: #4f46e5; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1)); border: 1px solid rgba(99, 102, 241, 0.25); padding: 6px 12px; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px; margin-top: -8px; margin-bottom: 4px;">📌 ชื่องาน: <span class="active-project-name-display">STA70</span></div>
+      <div class="form-group">
+        <label for="distDate">ว/ด/ป</label>
+        <input type="date" id="distDate" class="glass-input" required>
+      </div>
+      <div class="form-group">
+        <label for="distPerPerson">แบ่งคนละ (บาท)</label>
+        <input type="number" id="distPerPerson" class="glass-input" min="0" step="0.01" value="0" required autofocus>
+      </div>
+      <div class="form-group">
+        <label for="distTotal">ยอดรวมที่ตัดแบ่ง (3 คน)</label>
+        <input type="number" id="distTotal" class="glass-input" min="0" step="0.01" value="0" readonly>
+        <span class="form-help">ระบบคำนวณยอดรวม 3 เท่าให้อัตโนมัติ</span>
+      </div>
+      <div class="form-group">
+        <label for="distNote">หมายเหตุ</label>
+        <input type="text" id="distNote" class="glass-input" placeholder="เช่น รอบปันผลเดือน พ.ค.">
+      </div>
+      <div class="form-group">
+        <label for="distSlip">รูปภาพสลิปโอนเงิน (ไม่บังคับ, แนบได้หลายรูป)</label>
+        <div class="file-upload-wrapper">
+          <input type="file" id="distSlip" class="glass-input file-input" accept="image/*" multiple>
+          <div id="distSlipPreviewContainer" class="slip-preview-container" style="display: none;"></div>
+        </div>
+      </div>
+      <input type="hidden" id="editDistributionIndex" value="-1">
+      <div class="form-actions">
+        <button type="button" id="btnDeleteDistribution" class="glass-btn danger" style="display: none; margin-right: auto;">ลบการปันผล</button>
+        <button type="button" class="glass-btn secondary" onclick="document.getElementById('dlgDistribution').close()">ยกเลิก</button>
+        <button type="submit" class="glass-btn primary">บันทึกข้อมูล</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 5. Add Stock Modal -->
+  <dialog id="dlgStock" closedby="any" aria-labelledby="dlgStockTitle">
+    <form method="dialog" class="glass-form">
+      <h2 id="dlgStockTitle">บันทึกรับหนังสือเข้าสต็อก</h2>
+      <div style="font-size: 13px; font-weight: 700; color: #4f46e5; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1)); border: 1px solid rgba(99, 102, 241, 0.25); padding: 6px 12px; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px; margin-top: -8px; margin-bottom: 4px;">📌 ชื่องาน: <span class="active-project-name-display">STA70</span></div>
+      <div class="form-group">
+        <label for="stockDate">ว/ด/ป ที่รับหนังสือ</label>
+        <input type="date" id="stockDate" class="glass-input" required>
+      </div>
+      <div class="form-group">
+        <label for="stockBookCode">รหัสหนังสือ</label>
+        <select id="stockBookCode" class="glass-select" required autofocus>
+          <option value="3zap">3zap</option>
+          <option value="3zeed">3zeed</option>
+        </select>
+        <span id="stockRemainingDisplay" class="form-help" style="margin-top: 5px; color: var(--text-muted); font-size: 0.85rem; font-weight: 500; display: block;"></span>
+      </div>
+      <div class="form-group">
+        <label for="stockReceived">จำนวนหนังสือที่รับเข้ามา (เล่ม)</label>
+        <input type="number" id="stockReceived" class="glass-input" min="1" value="100" required>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="glass-btn secondary" onclick="document.getElementById('dlgStock').close()">ยกเลิก</button>
+        <button type="submit" class="glass-btn primary">บันทึกข้อมูล</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Add/Edit Book Type Modal -->
+  <dialog id="dlgBook" closedby="any" aria-labelledby="dlgBookTitle">
+    <form method="dialog" class="glass-form">
+      <h2 id="dlgBookTitle">เพิ่มชนิดหนังสือ</h2>
+      <div class="form-group">
+        <label for="bookCode">รหัสหนังสือ</label>
+        <input type="text" id="bookCode" class="glass-input" placeholder="เช่น 3zap, 3zeed, 3cool" required>
+      </div>
+      <div class="form-group">
+        <label for="bookDeductKeywords">คำค้นหาคอร์สเพื่อใช้หักสต็อก (คั่นด้วยเครื่องหมายจุลภาค ,)</label>
+        <input type="text" id="bookDeductKeywords" class="glass-input" placeholder="เช่น zap, combo" required>
+        <select id="bookProductSelect" class="glass-select" style="width: 100%;">
+          <option value="">-- เลือกคอร์สด่วนเพื่อใส่เป็นคำค้นหา --</option>
+        </select>
+        <div id="bookKeywordsPills" class="keyword-pills-container"></div>
+        <span class="form-help">เมื่อคอร์สในออเดอร์มียอดขาย และรหัสคอร์สมีคำคำนี้ จะถูกนำไปหักสต็อกเล่มนี้</span>
+      </div>
+      <input type="hidden" id="editBookIndex" value="-1">
+      <div class="form-actions">
+        <button type="button" id="btnDeleteBook" class="glass-btn danger" style="display: none; margin-right: auto;">ลบชนิดหนังสือ</button>
+        <button type="button" class="glass-btn secondary" onclick="document.getElementById('dlgBook').close()">ยกเลิก</button>
+        <button type="submit" class="glass-btn primary">บันทึกข้อมูล</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 6. Add Project Modal -->
+  <dialog id="dlgProject" closedby="any" aria-labelledby="dlgProjTitle">
+    <form method="dialog" class="glass-form">
+      <h2 id="dlgProjTitle">🆕 สร้างโปรเจกต์ประจำปีใหม่</h2>
+      <p class="form-help" style="margin-bottom: 12px;">สร้างชุดโปรเจกต์แยกตามปี พ.ศ. เพื่อเริ่มคำนวณและแสดงผล</p>
+      <div class="form-group">
+        <label for="newProjectName">ชื่อโปรเจกต์ (ภาษาอังกฤษ)</label>
+        <input type="text" id="newProjectName" class="glass-input" placeholder="เช่น STA, 3za, 3COOL" required>
+      </div>
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label for="newProjectYear">ปี พ.ศ. ของงาน</label>
+        <input type="number" id="newProjectYear" class="glass-input" required placeholder="เช่น 2570, 2569" min="2500" max="2600" value="2569">
+      </div>
+      <div class="form-actions">
+        <button type="button" class="glass-btn secondary" onclick="document.getElementById('dlgProject').close()">ยกเลิก</button>
+        <button type="submit" class="glass-btn primary">สร้างโปรเจกต์</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 8. Google Sheets Sync Modal -->
+  <dialog id="dlgSync" closedby="any" aria-labelledby="dlgSyncTitle">
+    <form method="dialog" class="glass-form" id="syncForm">
+      <h2 id="dlgSyncTitle">ดึงข้อมูลจาก Google Sheets</h2>
+      <p class="form-help">ดึงข้อมูลจริงจาก Google Sheets แบบสดๆ เพื่อซิงก์ข้อมูลลงเบราว์เซอร์ของท่านโดยตรง</p>
+      
+      <div class="form-group">
+        <label for="sheetUrl">ลิงก์ Google Sheets ของท่าน</label>
+        <input type="text" id="sheetUrl" class="glass-input" value="https://docs.google.com/spreadsheets/d/15PDmzbRGXocSvm42lksU9KNRcg7op31qc-b1JEo4wjQ/edit?usp=drivesdk" required>
+      </div>
+
+      <div class="form-group">
+        <label>รายการแท็บที่จะซิงก์ (6 แท็บหลัก):</label>
+        <div class="dialog-list-box">
+          <div>• <strong>Sta70</strong> (gid: 1976533842) - โครงการ STA ปี 2570</div>
+          <div>• <strong>3COOL69</strong> (gid: 270727382) - โครงการ 3COOL ปี 2569</div>
+          <div>• <strong>3za69</strong> (gid: 55359882) - โครงการ 3za ปี 2569</div>
+          <div>• <strong>Sta69</strong> (gid: 252763416) - โครงการ STA ปี 2569</div>
+          <div>• <strong>3Cool68</strong> (gid: 881957766) - โครงการ 3COOL ปี 2568</div>
+          <div>• <strong>3za68</strong> (gid: 0) - โครงการ 3za ปี 2568</div>
+        </div>
+      </div>
+
+      <div class="form-group" id="syncProgressSection" style="display: none;">
+        <label>สถานะการซิงก์ข้อมูล:</label>
+        <div id="syncStatusList" class="dialog-list-box" style="font-family: monospace; font-size: 12px; max-height: 150px;">
+          <!-- Logging lines will appear here dynamically -->
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="glass-btn secondary" id="btnCancelSync" onclick="document.getElementById('dlgSync').close()">ปิดหน้าต่าง</button>
+        <button type="submit" class="glass-btn primary" id="btnStartSync">เริ่มต้นซิงก์ข้อมูล</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 9. Change Password Modal -->
+  <dialog id="dlgChangePassword" closedby="any" aria-labelledby="dlgPassTitle">
+    <form method="dialog" class="glass-form" id="changePassForm">
+      <h2 id="dlgPassTitle">🔒 ตั้งค่ารหัสผ่านและชื่อแอดมิน</h2>
+      <p class="form-help" style="margin-bottom: 16px;">
+        แก้ไขชื่อแอดมินผู้กรอกข้อมูล หรือเปลี่ยนรหัสผ่านความปลอดภัยที่ใช้ล็อกอินเข้าสู่ระบบ
+      </p>
+      
+      <div class="form-group">
+        <label for="adminNameInput">ชื่อแอดมิน / ผู้กรอกข้อมูลปัจจุบัน</label>
+        <input type="text" id="adminNameInput" class="glass-input" required placeholder="กรอกชื่อของคุณ เช่น แอดมินนนท์, แอดมินส้ม">
+      </div>
+      <div class="form-group" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
+        <label for="oldPassword">รหัสผ่านปัจจุบัน (กรอกเมื่อต้องการเปลี่ยนรหัสผ่าน)</label>
+        <input type="password" id="oldPassword" class="glass-input" placeholder="กรอกรหัสผ่านปัจจุบัน">
+      </div>
+      <div class="form-group">
+        <label for="newPassword">รหัสผ่านระบบใหม่ (ปล่อยว่างหากไม่ต้องการเปลี่ยน)</label>
+        <input type="password" id="newPassword" class="glass-input" placeholder="กรอกรหัสผ่านใหม่">
+      </div>
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label for="confirmNewPassword">ยืนยันรหัสผ่านใหม่</label>
+        <input type="password" id="confirmNewPassword" class="glass-input" placeholder="กรอกยืนยันรหัสผ่านใหม่อีกครั้ง">
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="glass-btn secondary" onclick="document.getElementById('dlgChangePassword').close()">ยกเลิก</button>
+        <button type="submit" class="glass-btn primary" id="btnSaveAllPasswords">บันทึกรหัสผ่านใหม่</button>
+      </div>
+    </form>
+  </dialog>
+  <!-- 10. Telegram Settings Modal -->
+  <dialog id="dlgTelegram" closedby="any" aria-labelledby="dlgTelegramTitle">
+    <form method="dialog" class="glass-form" id="telegramForm">
+      <h2 id="dlgTelegramTitle">ตั้งค่าการแจ้งเตือน Telegram</h2>
+      <p class="form-help" style="margin-bottom: 12px;">ส่งรายงานรายรับรายจ่ายปันผลไปยังแชทส่วนตัวของหุ้นส่วนแต่ละคนผ่านแชทบอตโดยตรง</p>
+      
+      <div style="margin: 4px 0 16px 0; display: flex; flex-direction: column; gap: 6px;">
+        <a href="https://t.me/iiizap_bot" target="_blank" class="glass-btn primary" style="text-decoration: none; justify-content: center; font-size: 13px; padding: 10px 14px; font-weight: 600;">
+          💬 เปิดแชทและเริ่มใช้งานบอต (@iiizap_bot)
+        </a>
+      </div>
+      
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label class="dialog-label-row">
+          <span>รายชื่อผู้รับการแจ้งเตือนปัจจุบัน</span>
+          <button type="button" id="btnRefreshTelegramChats" class="glass-btn secondary btn-sm" style="font-size: 11px; padding: 4px 8px; border-radius: 4px;">
+            🔄 ดึงรายชื่อล่าสุด
+          </button>
+        </label>
+        
+        <div id="telegramRecipientsList" class="dialog-list-box" style="min-height: 60px; max-height: 150px;">
+          <div style="color: var(--text-secondary); text-align: center; font-size: 12px; padding: 10px 0;">🔄 กำลังโหลดรายชื่อ...</div>
+        </div>
+        
+        <span class="form-help" style="margin-top: 8px; display: block; line-height: 1.4; font-size: 11px; color: var(--text-secondary);">
+          * หุ้นส่วนต้องกดปุ่มด้านบน เปิดคุยกับบอตใน Telegram แล้วกด <b>Start</b> ก่อน จึงจะได้รับการแจ้งเตือน
+        </span>
+      </div>
+      
+      <div class="form-actions">
+        <button type="button" class="glass-btn danger" id="btnTestTelegram" style="margin-right: auto;">🧪 ทดสอบส่ง</button>
+        <button type="button" class="glass-btn primary" onclick="document.getElementById('dlgTelegram').close()">ปิดหน้าต่าง</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 11. LINE Settings Modal -->
+  <dialog id="dlgLine" closedby="any" aria-labelledby="dlgLineTitle">
+    <form method="dialog" class="glass-form" id="lineSettingsForm">
+      <h2 id="dlgLineTitle">💬 ตั้งค่าระบบเชื่อมต่อ LINE</h2>
+      <p class="form-help" style="margin-bottom: 12px;">ตั้งค่าเพื่อใช้งานบอต LINE และแชร์ลิงก์เพิ่มเพื่อนให้แก่หุ้นส่วนคนอื่น ๆ</p>
+      
+      <!-- Copy Link Section -->
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label>ลิงก์เพิ่มเพื่อน LINE Bot (สำหรับหุ้นส่วน)</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="lineBotFriendLink" class="glass-input" readonly value="https://line.me/R/ti/p/@iiizap_bot" style="flex-grow: 1;">
+          <button type="button" id="btnCopyLineLink" class="glass-btn primary" style="white-space: nowrap; padding: 10px 14px;">คัดลอกลิงก์</button>
+        </div>
+        <span class="form-help" style="margin-top: 6px; display: block; line-height: 1.4; font-size: 11px; color: var(--text-secondary);">
+          * ให้หุ้นส่วนกดลิงก์นี้เพื่อเพิ่มเพื่อนบอต <b>@iiizap_bot</b> และเข้าสู่การใช้งานบอต LINE
+        </span>
+      </div>
+
+      <!-- LINE Message Quota Section -->
+      <div class="form-group" style="margin-bottom: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 16px;">
+        <label>โควตาข้อความ LINE จริงประจำเดือน</label>
+        <div id="lineQuotaStatus" style="font-size: 14px; font-weight: 500; color: var(--text-primary); margin-top: 4px; display: flex; flex-direction: column; gap: 4px;">
+          <span id="lineQuotaRemaining" style="font-size: 15px; color: #10b981;">⏳ กำลังดึงข้อมูลโควตาจาก LINE...</span>
+          <span id="lineQuotaDetails" style="font-size: 12px; color: var(--text-secondary);"></span>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="glass-btn primary" onclick="document.getElementById('dlgLine').close()">ปิดหน้าต่าง</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Lightbox Slip Viewer Modal -->
+  <dialog id="dlgSlipViewer" closedby="any" aria-labelledby="dlgSlipViewerTitle" class="lightbox-dialog" style="max-width: 500px;">
+    <div class="lightbox-content">
+      <h3 id="dlgSlipViewerTitle" style="margin: 0 0 15px 0; font-size: 16px; color: var(--text-primary); text-align: center;">รูปภาพสลิปโอนเงิน</h3>
+      <div id="slipViewerContent" style="display: flex; flex-direction: column; gap: 15px; max-height: 65dvh; overflow-y: auto; padding-right: 5px;">
+        <!-- Images will be inserted here dynamically -->
+      </div>
+      <div class="lightbox-actions" style="margin-top: 20px; display: flex; justify-content: center;">
+        <button type="button" class="glass-btn secondary" onclick="document.getElementById('dlgSlipViewer').close()">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ExcelJS Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+  
+  <!-- Main Application JavaScript -->
+  <script type="module" src="app.js"></script>
+
+  <!-- 11. Edit History Modal -->
+  <dialog id="dlgHistory" closedby="any" aria-labelledby="dlgHistoryTitle" style="max-width: 540px; width: 92%; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.96); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
+    <div class="glass-form" style="padding: 16px; color: var(--text-primary);">
+      <h2 id="dlgHistoryTitle" style="margin-bottom: 6px; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px;">📜 ประวัติการแก้ไขระบบ</h2>
+      <p class="form-help" style="margin-bottom: 10px; font-size: 12px; color: var(--text-secondary); line-height: 1.3;">
+        ประวัติการทำรายการย้อนหลังของหุ้นส่วนทุกคนในระบบ สามารถค้นหาและตรวจสอบได้ย้อนหลัง
+      </p>
+
+      <div style="margin-bottom: 10px;">
+        <input type="text" id="searchHistoryLogs" class="glass-input" placeholder="🔍 ค้นหาประวัติ (รายการ, คอร์ส, แอดมิน, ยอดเงิน)..." style="width: 100%; padding: 8px 12px; font-size: 12px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff;">
+      </div>
+      
+      <div id="historyTimeline" style="max-height: 420px; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px;">
+        <div class="empty-state" style="text-align: center; padding: 20px; color: var(--text-secondary);">กำลังโหลดประวัติการแก้ไข...</div>
+      </div>
+
+      <div class="form-actions" style="margin-top: 6px;">
+        <button type="button" class="glass-btn secondary" onclick="document.getElementById('dlgHistory').close()" style="width: 100%; justify-content: center; padding: 10px; border-radius: 10px; font-weight: 600; font-size: 13px;">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 12. Carryover Balance Modal -->
+  <dialog id="dlgCarryover" closedby="any" aria-labelledby="dlgCarryoverTitle">
+    <form method="dialog" class="glass-form" id="carryoverForm">
+      <h2 id="dlgCarryoverTitle">🔄 ยกยอดคงเหลือข้ามโปรเจกต์</h2>
+      <p class="form-help" style="margin-bottom: 16px;">
+        โอนย้ายยอดเงินคงเหลือจากโปรเจกต์ต้นทาง ไปเปิดยอดรายรับเริ่มต้นให้แก่โปรเจกต์ปลายทางคู่โอน
+      </p>
+
+      <div class="form-group">
+        <label for="carrySource">โปรเจกต์ต้นทาง (โอนออก)</label>
+        <select id="carrySource" class="glass-select" disabled></select>
+      </div>
+
+      <div class="form-group">
+        <label>ยอดเงินคงเหลือปัจจุบันที่โอนได้</label>
+        <div id="carryAvailableBalance" style="font-size: 18px; font-weight: bold; color: var(--primary-btn-bg); padding: 8px 12px; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px dashed rgba(255,255,255,0.1); margin-top: 4px;">0.00 บาท</div>
+      </div>
+
+      <div class="form-group">
+        <label for="carryDest">โปรเจกต์ปลายทาง (โอนเข้า)</label>
+        <select id="carryDest" class="glass-select" required></select>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label for="carryAmount">จำนวนเงินที่ต้องการโอน (บาท)</label>
+        <input type="number" id="carryAmount" class="glass-input" step="0.01" min="0.01" placeholder="ระบุจำนวนเงินที่ต้องการโอน" required>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="glass-btn secondary" onclick="document.getElementById('dlgCarryover').close()">ยกเลิก</button>
+        <button type="submit" class="glass-btn primary" id="btnConfirmCarryover">ยืนยันการโอนย้าย</button>
+      </div>
+    </form>
+  </dialog>
+
+</body>
+</html>

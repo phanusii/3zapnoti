@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>3 ZAP 3 WICHA - บันทึกข้อมูล</title>
+  <!-- Google Fonts: Outfit and Sarabun -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- LINE LIFF SDK -->
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #090f19 0%, #1e1b4b 100%);
+      --glass-bg: rgba(30, 41, 59, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --primary-color: #6366f1;
+      --primary-glow: rgba(99, 102, 241, 0.4);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --success-color: #10b981;
+      --danger-color: #f43f5e;
+      --font-family: 'Outfit', 'Sarabun', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background: var(--bg-gradient);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 16px;
+    }
+
+    /* Ambient glow elements */
+    .glow-bg {
+      position: fixed;
+      top: -100px;
+      left: -100px;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    
+    .glow-bg-right {
+      position: fixed;
+      bottom: -100px;
+      right: -100px;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Main container */
+    .app-card {
+      width: 100%;
+      max-width: 450px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      padding: 24px 20px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      z-index: 1;
+      position: relative;
+    }
+
+    /* Logo & Header */
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .logo-container {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 54px;
+      height: 54px;
+      background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+      border-radius: 16px;
+      box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3);
+      margin-bottom: 12px;
+    }
+
+    .logo-container svg {
+      width: 28px;
+      height: 28px;
+      color: #fff;
+    }
+
+    .title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      background: linear-gradient(to right, #a5b4fc, #f472b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Form Styles */
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      padding-left: 2px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    .glass-input, .glass-select {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 15px;
+      color: var(--text-primary);
+      font-family: var(--font-family);
+      outline: none;
+      transition: all 0.3s ease;
+    }
+
+    .glass-input:focus, .glass-select:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    .glass-select {
+      appearance: none;
+      cursor: pointer;
+    }
+
+    /* select custom arrow icon */
+    .form-group.select-type::after {
+      content: '▼';
+      font-size: 10px;
+      color: var(--text-secondary);
+      position: absolute;
+      right: 16px;
+      pointer-events: none;
+    }
+    
+    .select-wrapper {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      gap: 8px;
+    }
+
+    .select-wrapper .glass-select {
+      flex: 1;
+    }
+
+    /* Icon button glow styling (for custom item add) */
+    .icon-btn-glow {
+      background: rgba(99, 102, 241, 0.06);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      color: #818cf8;
+      padding: 11px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      height: 46px;
+      width: 46px;
+    }
+
+    .icon-btn-glow:hover {
+      background: rgba(99, 102, 241, 0.12);
+      border-color: rgba(99, 102, 241, 0.6);
+      box-shadow: 0 0 12px var(--primary-glow);
+    }
+
+    .icon-btn-glow svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* Circle button for quantity control */
+    .circle-btn {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      outline: none;
+    }
+
+    .circle-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+    }
+
+    /* File upload design */
+    .file-upload-container {
+      border: 2px dashed rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      background: rgba(15, 23, 42, 0.4);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .file-upload-container:hover {
+      border-color: var(--primary-color);
+      background: rgba(15, 23, 42, 0.6);
+    }
+
+    .file-upload-container input[type="file"] {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .upload-icon {
+      font-size: 24px;
+      margin-bottom: 6px;
+      color: var(--text-secondary);
+    }
+
+    .upload-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .preview-container {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .preview-item {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .preview-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .preview-item .remove-btn {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      background: rgba(244, 63, 94, 0.9);
+      border: none;
+      color: white;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    /* Buttons block */
+    .btn-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: var(--font-family);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      color: var(--text-primary);
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-family);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Success / Toast overlay */
+    .success-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+
+    .success-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .checkmark-circle {
+      width: 80px;
+      height: 80px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 3px solid var(--success-color);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+    }
+
+    .checkmark-circle svg {
+      width: 40px;
+      height: 40px;
+      color: var(--success-color);
+    }
+
+    .success-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .success-desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+      text-align: center;
+      padding: 0 24px;
+    }
+
+    /* loading animation */
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s infinite linear;
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="glow-bg"></div>
+  <div class="glow-bg-right"></div>
+
+  <div class="app-card">
+    <div class="header">
+      <div id="projectBadge" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: linear-gradient(135deg, #6366f1, #a855f7); color: #ffffff; padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 12px; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);">
+        📌 ชื่องาน: <span id="projectBadgeText">STA70 (2570)</span>
+      </div>
+      <h1 class="title" id="pageTitle">3 ZAP 3 WICHA</h1>
+      <div class="subtitle" id="pageSubtitle">บันทึกข้อมูลเข้าระบบ</div>
+    </div>
+
+    <!-- Sale Form -->
+    <form id="formSale" style="display: none;">
+      <div class="form-group">
+        <label for="saleCode">เลือกคอร์สเรียน</label>
+        <div class="select-wrapper" style="display: flex; gap: 8px; align-items: center;">
+          <select id="saleCode" class="glass-select" required style="flex: 1;"></select>
+          <button type="button" id="btnEditCourseName" class="btn-secondary" title="พิมพ์แก้ไขชื่อคอร์สนี้" style="padding: 6px 12px; font-size: 12px; height: 42px; white-space: nowrap; width: auto;">
+            ✏️ แก้ไขชื่อ
+          </button>
+          <button type="button" id="btnAddCustomCourse" class="icon-btn-glow" title="เพิ่มคอร์สใหม่" style="height: 42px; width: 42px; min-width: 42px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="saleQty">จำนวน (Quantity)</label>
+        <div class="qty-container" style="display: flex; align-items: center; gap: 12px; width: 100%;">
+          <input type="number" id="saleQty" class="glass-input" min="1" value="1" required style="flex: 1; text-align: center; font-size: 18px; font-weight: 600; height: 46px;">
+          <button type="button" class="circle-btn" id="btnQtyDec">−</button>
+          <button type="button" class="circle-btn" id="btnQtyInc">+</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="saleUnitPrice">ราคาต่อหน่วย (Unit Price)</label>
+        <input type="number" id="saleUnitPrice" class="glass-input" min="0" step="0.01" value="0" required style="font-size: 16px; font-weight: 500; height: 46px;">
+      </div>
+      <div class="form-group">
+        <label>รวมทั้งหมด</label>
+        <div class="total-display-card" style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 16px; padding: 14px; text-align: center; box-shadow: 0 0 16px rgba(16, 185, 129, 0.1);">
+          <span style="font-size: 28px; font-weight: 700; color: #10b981; text-shadow: 0 0 12px rgba(16, 185, 129, 0.4); font-family: var(--font-family);" id="lblTotalPrice">฿ 0.00</span>
+        </div>
+        <input type="hidden" id="saleTotalPrice" value="0">
+      </div>
+      <div class="btn-actions" style="margin-top: 8px;">
+        <button type="submit" class="btn-primary" id="btnSubmitSale">
+          <span>บันทึกข้อมูล</span>
+        </button>
+        <button type="button" class="btn-secondary" id="btnCancelSale">ยกเลิก/ปิด</button>
+      </div>
+    </form>
+
+    <!-- Expense Form -->
+    <form id="formExpense" style="display: none;">
+      <div class="form-group">
+        <label for="expDate">ว/ด/ป</label>
+        <input type="date" id="expDate" class="glass-input" required>
+      </div>
+      <div class="form-group">
+        <label for="expDesc">รายการรายจ่าย</label>
+        <input type="text" id="expDesc" class="glass-input" placeholder="เช่น ค่าเครื่องเขียน, ค่าส่งของ" required>
+      </div>
+      <div class="form-group">
+        <label for="expPrice">จำนวนเงิน (บาท)</label>
+        <input type="number" id="expPrice" class="glass-input" min="0.01" step="0.01" required>
+      </div>
+      <div class="form-group">
+        <label for="expNote">หมายเหตุ</label>
+        <input type="text" id="expNote" class="glass-input" placeholder="ระบุรายละเอียดเพิ่มเติม (ถ้ามี)">
+      </div>
+      <div class="form-group">
+        <label>รูปภาพสลิปใบเสร็จ (แนบได้หลายรูป)</label>
+        <div class="file-upload-container">
+          <div class="upload-icon">📷</div>
+          <div class="upload-text">กดเพื่อถ่ายรูปหรือแนบสลิปใบเสร็จ</div>
+          <input type="file" id="expSlips" accept="image/*" multiple>
+        </div>
+        <div id="expSlipPreviews" class="preview-container"></div>
+      </div>
+      <div class="btn-actions">
+        <button type="submit" class="btn-primary" id="btnSubmitExpense">
+          <span>บันทึกข้อมูล</span>
+        </button>
+        <button type="button" class="btn-secondary" id="btnCancelExpense">ยกเลิก/ปิด</button>
+      </div>
+    </form>
+
+    <!-- Ad Form -->
+    <form id="formAd" style="display: none;">
+      <div class="form-group">
+        <label for="adDate">ว/ด/ป</label>
+        <input type="date" id="adDate" class="glass-input" required>
+      </div>
+      <div class="form-group">
+        <label for="adDesc">แพลตฟอร์มโฆษณา</label>
+        <input type="text" id="adDesc" class="glass-input" placeholder="เช่น Facebook Ads, TikTok Ads" required>
+      </div>
+      <div class="form-group">
+        <label for="adPrice">จำนวนค่าโฆษณา (บาท)</label>
+        <input type="number" id="adPrice" class="glass-input" min="0.01" step="0.01" required>
+      </div>
+      <div class="form-group">
+        <label>รูปภาพสลิปค่าโฆษณา</label>
+        <div class="file-upload-container">
+          <div class="upload-icon">📷</div>
+          <div class="upload-text">กดแนบรูปภาพสลิปหลักฐานค่าโฆษณา</div>
+          <input type="file" id="adSlips" accept="image/*" multiple>
+        </div>
+        <div id="adSlipPreviews" class="preview-container"></div>
+      </div>
+      <div class="btn-actions">
+        <button type="submit" class="btn-primary" id="btnSubmitAd">
+          <span>บันทึกข้อมูล</span>
+        </button>
+        <button type="button" class="btn-secondary" id="btnCancelAd">ยกเลิก/ปิด</button>
+      </div>
+    </form>
+
+    <!-- Stock Form -->
+    <form id="formStock" style="display: none;">
+      <div class="form-group">
+        <label for="stockDate">ว/ด/ป</label>
+        <input type="date" id="stockDate" class="glass-input" required>
+      </div>
+      <div class="form-group select-type">
+        <label for="stockBookSelect">เลือกหนังสือ</label>
+        <select id="stockBookSelect" class="glass-select" required></select>
+      </div>
+      <div class="form-group">
+        <label for="stockQty">จำนวนหนังสือที่รับเข้าสต็อก (เล่ม)</label>
+        <input type="number" id="stockQty" class="glass-input" min="1" required>
+      </div>
+      <div class="form-group">
+        <label>รูปภาพสลิป/หลักฐานรับของ</label>
+        <div class="file-upload-container">
+          <div class="upload-icon">📷</div>
+          <div class="upload-text">กดแนบภาพถ่ายหลักฐานรับเข้าสต็อก</div>
+          <input type="file" id="stockSlips" accept="image/*" multiple>
+        </div>
+        <div id="stockSlipPreviews" class="preview-container"></div>
+      </div>
+      <div class="btn-actions">
+        <button type="submit" class="btn-primary" id="btnSubmitStock">
+          <span>บันทึกข้อมูล</span>
+        </button>
+        <button type="button" class="btn-secondary" id="btnCancelStock">ยกเลิก/ปิด</button>
+      </div>
+    </form>
+
+    <!-- Distribution Form -->
+    <form id="formDistribution" style="display: none;">
+      <div class="form-group">
+        <label for="distDate">ว/ด/ป</label>
+        <input type="date" id="distDate" class="glass-input" required>
+      </div>
+      <div class="form-group">
+        <label for="distPerPerson">แบ่งคนละ (บาท)</label>
+        <input type="number" id="distPerPerson" class="glass-input" min="0.01" step="0.01" required>
+      </div>
+      <div class="form-group">
+        <label>ยอดแบ่งปันผลรวม (บาท)</label>
+        <div class="total-display-card" style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 16px; padding: 14px; text-align: center; box-shadow: 0 0 16px rgba(245, 158, 11, 0.1);">
+          <span style="font-size: 28px; font-weight: 700; color: #f59e0b; text-shadow: 0 0 12px rgba(245, 158, 11, 0.4); font-family: var(--font-family);" id="lblDistTotal">฿ 0.00</span>
+        </div>
+        <input type="hidden" id="distTotal" value="0">
+      </div>
+      <div class="form-group">
+        <label for="distNote">หมายเหตุ</label>
+        <input type="text" id="distNote" class="glass-input" placeholder="ระบุการคำนวณปันผล (ถ้ามี)">
+      </div>
+      <div class="form-group">
+        <label>รูปภาพสลิปแบ่งเงินหุ้นส่วน</label>
+        <div class="file-upload-container">
+          <div class="upload-icon">📷</div>
+          <div class="upload-text">กดแนบสลิปหลักฐานการโอนแบ่งเงิน</div>
+          <input type="file" id="distSlips" accept="image/*" multiple>
+        </div>
+        <div id="distSlipPreviews" class="preview-container"></div>
+      </div>
+      <div class="btn-actions">
+        <button type="submit" class="btn-primary" id="btnSubmitDistribution">
+          <span>บันทึกข้อมูล</span>
+        </button>
+        <button type="button" class="btn-secondary" id="btnCancelDistribution">ยกเลิก/ปิด</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Success Overlay -->
+  <div class="success-overlay" id="successOverlay">
+    <div class="checkmark-circle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+    </div>
+    <div class="success-title">บันทึกข้อมูลสำเร็จ!</div>
+    <div class="success-desc" id="successDesc">ข้อมูลของคุณได้รับการอัปเดตลงในระบบชีตและแจ้งเตือนเรียบร้อยแล้ว</div>
+    <button type="button" class="btn-primary" id="btnCloseSuccess" onclick="closeLiffWindow()" style="min-width: 160px; margin-top: 10px; cursor: pointer; position: relative; z-index: 10001;">ปิดหน้าต่าง</button>
+  </div>
+
+  <!-- Login Overlay for Unauthorized Users in LIFF -->
+  <div id="loginOverlay" class="login-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+    <div class="glass-card" style="width: 100%; max-width: 380px; padding: 28px 24px; background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); text-align: center;">
+      <div style="font-size: 36px; margin-bottom: 8px;">🔐</div>
+      <h2 style="font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 6px;">กรอกข้อมูลเพื่อเชื่อมต่อสิทธิ์</h2>
+      <p style="font-size: 13px; color: #94a3b8; margin-bottom: 20px; line-height: 1.4;">กรุณากรอกชื่อแอดมินและรหัสผ่านเพื่อยืนยันสิทธิ์เข้าใช้งานระบบบัญชีหลังบ้าน</p>
+      
+      <form id="liffLoginForm" style="display: flex; flex-direction: column; gap: 14px;">
+        <div class="form-group" style="text-align: left;">
+          <label style="color: #cbd5e1; font-size: 12px; font-weight: 600;">ชื่อผู้ทำรายการ / ชื่อแอดมิน</label>
+          <input type="text" id="liffLoginAdminName" class="glass-input" placeholder="เช่น แอดมินนก" required style="background: rgba(15, 23, 42, 0.6); color: #fff; border-color: rgba(255,255,255,0.2); height: 42px;">
+        </div>
+        <div class="form-group" style="text-align: left;">
+          <label style="color: #cbd5e1; font-size: 12px; font-weight: 600;">รหัสผ่านเข้าใช้งานระบบ</label>
+          <input type="password" id="liffLoginPassword" class="glass-input" placeholder="กรอกรหัสผ่าน" required style="background: rgba(15, 23, 42, 0.6); color: #fff; border-color: rgba(255,255,255,0.2); height: 42px;">
+        </div>
+        <div id="liffLoginError" style="color: #f87171; font-size: 12px; min-height: 18px;"></div>
+        <button type="submit" class="btn-primary" id="btnSubmitLiffLogin" style="width: 100%; justify-content: center; height: 46px; font-size: 15px; font-weight: 600; margin-top: 6px;">
+          🔓 ยืนยันเชื่อมต่อสิทธิ์
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Config and State
+    const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbxFD2loccRj_htSLTsDGY76ytQrvu80W_DzEIMMR7qhhUMIJMq7b6BUYxEBt6QUu9Ci/exec";
+    let db = {};
+    let currentProject = "STA";
+    let currentYear = "2569";
+    let currentKey = "STA_2569";
+    let activeAction = "";
+    let lineUserId = "";
+    
+    // File upload slip states
+    let activeSlips = [];
+
+    // Parse URL params
+    function getLiffAction() {
+      const urlParams = new URLSearchParams(window.location.search);
+      let action = urlParams.get("action");
+      if (action) return action;
+
+      const liffState = urlParams.get("liff.state");
+      if (liffState) {
+        const decodedState = decodeURIComponent(liffState);
+        const qIndex = decodedState.indexOf("?");
+        if (qIndex !== -1) {
+          const stateParams = new URLSearchParams(decodedState.substring(qIndex));
+          action = stateParams.get("action");
+          if (action) return action;
+        }
+      }
+
+      const hash = window.location.hash;
+      if (hash) {
+        const qIndex = hash.indexOf("?");
+        if (qIndex !== -1) {
+          const hashParams = new URLSearchParams(hash.substring(qIndex));
+          action = hashParams.get("action");
+          if (action) return action;
+        }
+        const stateMatch = hash.match(/liff\.state=([^&]+)/);
+        if (stateMatch) {
+          const decodedState = decodeURIComponent(stateMatch[1]);
+          const qIdx = decodedState.indexOf("?");
+          if (qIdx !== -1) {
+            const stateParams = new URLSearchParams(decodedState.substring(qIdx));
+            action = stateParams.get("action");
+            if (action) return action;
+          }
+        }
+      }
+      return null;
+    }
+
+    const action = getLiffAction() || "add-sale";
+    activeAction = action;
+
+    // Set Date fields defaults
+    const todayStr = new Date().toISOString().split('T')[0];
+    document.querySelectorAll('input[type="date"]').forEach(el => el.value = todayStr);
+
+    // Initialize App
+    window.addEventListener("DOMContentLoaded", async () => {
+      loadCachedDb();
+      setupLayout();
+      initLiff();
+      setupFormListeners();
+    });
+
+    // Load Database from LocalStorage cache
+    function loadCachedDb() {
+      const cached = localStorage.getItem("sta69_revenue_tracker_db");
+      if (cached) {
+        try {
+          db = JSON.parse(cached);
+          console.log("Loaded cached db.");
+        } catch (e) {
+          console.error("Cache corrupted, reset.");
+          db = {};
+        }
+      }
+      
+      // Auto determine active project & year from local selection defaults (Default to latest 2570)
+      const combo = localStorage.getItem("sta69_current_project_combo");
+      if (combo && combo.includes("_")) {
+        const parts = combo.split("_");
+        currentProject = parts[0];
+        currentYear = parts[1];
+      } else {
+        currentProject = localStorage.getItem("sta69_current_project") || "STA";
+        currentYear = localStorage.getItem("sta69_current_year") || "2570";
+      }
+      currentKey = `${currentProject}_${currentYear}`;
+      
+      if (!db[currentKey]) {
+        db[currentKey] = { sales: [], ads: [], expenses: [], distributions: [], stock: [], stockLogs: [] };
+      }
+      Object.keys(db).forEach(k => {
+        if (db[k] && db[k].sales) consolidateSales(db[k]);
+      });
+      localStorage.setItem("sta69_revenue_tracker_db", JSON.stringify(db));
+    }
+
+    function consolidateSales(data) {
+      if (!data || !Array.isArray(data.sales)) return;
+      const map = new Map();
+      const result = [];
+      data.sales.forEach(item => {
+        if (!item || !item.code) return;
+        const norm = item.code.replace(/\s+/g, "").toUpperCase();
+        if (map.has(norm)) {
+          const existing = map.get(norm);
+          if ((item.qty || 0) >= (existing.qty || 0)) {
+            existing.qty = item.qty;
+            existing.unitPrice = item.unitPrice;
+            existing.totalPrice = item.totalPrice;
+          }
+          if (item.slips && item.slips.length > 0) existing.slips = item.slips;
+        } else {
+          const copy = { ...item };
+          map.set(norm, copy);
+          result.push(copy);
+        }
+      });
+      data.sales = result;
+    }
+
+    // Initialize LINE LIFF and sync active project from LINE session
+    function initLiff() {
+      liff.init({ liffId: "2010690090-AKybN7Fn" }) // Matches the production app settings
+        .then(async () => {
+          console.log("LIFF Initialized.");
+          if (liff.isLoggedIn()) {
+            try {
+              const profile = await liff.getProfile();
+              const userId = profile.userId;
+              lineUserId = userId;
+              if (profile.displayName) {
+                localStorage.setItem("sta69_admin_name", profile.displayName);
+              }
+              const gasUrl = `${GAS_ENDPOINT}?action=get-active-project&userId=${userId}`;
+              const res = await fetch(gasUrl);
+              const data = await res.json();
+              if (activeAction === "link-user-account" || (data && data.status === "error" && data.message && data.message.includes("Unauthorized"))) {
+                console.log("LINE user is unauthorized or linking account. Showing login overlay...");
+                localStorage.removeItem("sta69_authorized");
+                const overlay = document.getElementById("loginOverlay");
+                if (overlay) {
+                  overlay.style.display = "flex";
+                  const cachedAdmin = localStorage.getItem("sta69_admin_name") || profile.displayName || "";
+                  const inputAdmin = document.getElementById("liffLoginAdminName");
+                  if (inputAdmin && cachedAdmin) inputAdmin.value = cachedAdmin;
+                }
+              } else {
+                const overlay = document.getElementById("loginOverlay");
+                if (overlay) overlay.style.display = "none";
+                if (data && data.activeProject) {
+                  const match = data.activeProject.match(/^([a-zA-Z0-9]+?)(\d{2})$/);
+                  if (match) {
+                    currentProject = match[1].toUpperCase();
+                    currentYear = "25" + match[2];
+                    currentKey = `${currentProject}_${currentYear}`;
+                    localStorage.setItem("sta69_current_project", currentProject);
+                    localStorage.setItem("sta69_current_year", currentYear);
+                    localStorage.setItem("sta69_current_project_combo", currentKey);
+                    setupLayout();
+                    console.log("Synced active project from LINE session in LIFF:", currentKey);
+                  }
+                }
+              }
+            } catch (e) {
+              console.error("Error fetching active project session in LIFF:", e);
+            }
+          }
+        })
+        .catch(err => {
+          console.error("LIFF failed to init:", err);
+        });
+    }
+
+    function closeLiffWindow() {
+      console.log("Closing LIFF window...");
+      try {
+        if (window.liff && typeof liff.closeWindow === "function") {
+          liff.closeWindow();
+        }
+      } catch (err) {
+        console.warn("liff.closeWindow error:", err);
+      }
+
+      try {
+        window.close();
+      } catch (err) {}
+
+      setTimeout(() => {
+        try {
+          if (navigator.userAgent.includes("Line") || navigator.userAgent.includes("LIFF")) {
+            window.location.href = "https://line.me/R/";
+          } else if (window.history.length > 1) {
+            window.history.back();
+          }
+        } catch (err) {}
+      }, 200);
+    }
+
+    // Set up form and title based on action parameter
+    function setupLayout() {
+      if (activeAction === "link-user-account") {
+        const overlay = document.getElementById("loginOverlay");
+        if (overlay) {
+          overlay.style.display = "flex";
+          const cachedAdmin = localStorage.getItem("sta69_admin_name") || "";
+          const inputAdmin = document.getElementById("liffLoginAdminName");
+          if (inputAdmin && cachedAdmin) inputAdmin.value = cachedAdmin;
+        }
+      }
+
+      const titles = {
+        "add-sale": { t: "บันทึกยอดขายคอร์ส", sub: "กรอกยอดขายคอร์สของแอดมิน", formId: "formSale" },
+        "add-expense": { t: "บันทึกยอดรายจ่าย", sub: "กรอกยอดค่าใช้จ่ายบริษัทอื่น ๆ", formId: "formExpense" },
+        "add-ad": { t: "บันทึกยอดค่าโฆษณา", sub: "กรอกค่า Ads ประจำวัน", formId: "formAd" },
+        "receive-stock": { t: "รับหนังสือเข้าสต็อก", sub: "กรอกประวัติรับหนังสือเข้าสต็อก", formId: "formStock" },
+        "add-distribution": { t: "บันทึกส่วนแบ่งหุ้นส่วน", sub: "กรอกเงินปันผลที่เบิกถอนแล้ว", formId: "formDistribution" },
+        "link-user-account": { t: "เชื่อมต่อสิทธิ์ LINE Bot", sub: "กรอกชื่อแอดมินและรหัสผ่านเพื่อเชื่อมสิทธิ์", formId: "formSale" }
+      };
+
+      const yearShort = currentYear && currentYear.length === 4 ? currentYear.substring(2) : currentYear;
+      const projCodeName = `${currentProject}${yearShort}`.toUpperCase();
+      const badgeText = document.getElementById("projectBadgeText");
+      if (badgeText) {
+        badgeText.textContent = `${projCodeName} (${currentProject} ${currentYear})`;
+      }
+
+      const spec = titles[activeAction] || titles["add-sale"];
+      document.getElementById("pageTitle").textContent = spec.t;
+      document.getElementById("pageSubtitle").textContent = `${spec.sub}`;
+      
+      // Show form
+      document.getElementById(spec.formId).style.display = "flex";
+
+      // Populate options
+      if (activeAction === "add-sale") {
+        populateSalesCourses();
+      } else if (activeAction === "receive-stock") {
+        populateStockBooks();
+      }
+    }
+
+    // Populate Sales dropdown
+    function populateSalesCourses() {
+      const select = document.getElementById("saleCode");
+      const defaultCourses = ["3ZAP A", "Combo S", "3 ZEED", "3ZAP P", "Combo X", "3 ZEED G"];
+      const uniqueCodes = new Set();
+
+      const activeData = db[currentKey];
+      if (activeData && activeData.sales) {
+        activeData.sales.forEach(s => {
+          if (s.code && !s.code.toLowerCase().includes("ยอดยกมาจาก")) {
+            uniqueCodes.add(s.code.trim().toUpperCase());
+          }
+        });
+      }
+      
+      if (uniqueCodes.size === 0) {
+        defaultCourses.forEach(c => uniqueCodes.add(c.toUpperCase()));
+      }
+
+      select.innerHTML = '<option value="" disabled selected>-- เลือกคอร์ส --</option>';
+      Array.from(uniqueCodes).sort().forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c;
+        opt.textContent = c;
+        select.appendChild(opt);
+      });
+    }
+
+    // Populate Stock Books dropdown
+    function populateStockBooks() {
+      const select = document.getElementById("stockBookSelect");
+      const defaultBooks = ["หนังสือ 3ZAP", "หนังสือ 3ZEED"];
+      const uniqueBooks = new Set();
+
+      const activeData = db[currentKey];
+      if (activeData && activeData.stock) {
+        activeData.stock.forEach(b => {
+          if (b.code) uniqueBooks.add(b.code.trim());
+        });
+      }
+
+      if (uniqueBooks.size === 0) {
+        defaultBooks.forEach(b => uniqueBooks.add(b));
+      }
+
+      select.innerHTML = '<option value="" disabled selected>-- เลือกหนังสือ --</option>';
+      Array.from(uniqueBooks).sort().forEach(b => {
+        const opt = document.createElement("option");
+        opt.value = b;
+        opt.textContent = b;
+        select.appendChild(opt);
+      });
+    }
+
+    // Image Compression Helper
+    function compressImage(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const img = new Image();
+          img.onload = function() {
+            const MAX_WIDTH = 600;
+            const MAX_HEIGHT = 600;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > MAX_WIDTH) {
+                height *= MAX_WIDTH / width;
+                width = MAX_WIDTH;
+              }
+            } else {
+              if (height > MAX_HEIGHT) {
+                width *= MAX_HEIGHT / height;
+                height = MAX_HEIGHT;
+              }
+            }
+
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
+            resolve(dataUrl);
+          };
+          img.onerror = reject;
+          img.src = event.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Set up form listeners and auto calculators
+    function setupFormListeners() {
+      // LIFF Login Form handler
+      const liffLoginForm = document.getElementById("liffLoginForm");
+      if (liffLoginForm) {
+        liffLoginForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const adminName = document.getElementById("liffLoginAdminName").value.trim();
+          const pass = document.getElementById("liffLoginPassword").value.trim();
+          const btn = document.getElementById("btnSubmitLiffLogin");
+          const errDiv = document.getElementById("liffLoginError");
+          
+          btn.disabled = true;
+          btn.innerHTML = `<span>⏳ กำลังยืนยันสิทธิ์...</span>`;
+          errDiv.textContent = "";
+
+          try {
+            const ctxUserId = (window.liff && liff.getContext) ? (liff.getContext()?.userId || "") : "";
+            const targetUserId = lineUserId || ctxUserId;
+
+            const linkUrl = `${GAS_ENDPOINT}?action=link-user-account&userId=${encodeURIComponent(targetUserId)}&passcode=${encodeURIComponent(pass)}&adminName=${encodeURIComponent(adminName)}`;
+            const res = await (await fetch(linkUrl)).json();
+            
+            if (res.status === "success") {
+              localStorage.setItem("sta69_admin_name", adminName);
+              localStorage.setItem("sta69_access_password", pass);
+              localStorage.setItem("sta69_authorized", "true");
+              
+              document.getElementById("loginOverlay").style.display = "none";
+              alert("🔓 ยืนยันรหัสผ่านและเชื่อมต่อสิทธิ์เข้าใช้งานสำเร็จเรียบร้อยแล้ว!");
+            } else {
+              errDiv.textContent = "❌ " + (res.message || "รหัสผ่านไม่ถูกต้อง");
+            }
+          } catch (err) {
+            errDiv.textContent = "❌ เกิดข้อผิดพลาดในการเชื่อมต่อ: " + err.message;
+          } finally {
+            btn.disabled = false;
+            btn.innerHTML = `🔓 ยืนยันเชื่อมต่อสิทธิ์`;
+          }
+        });
+      }
+
+      // Sale Auto Calculation
+      const saleQty = document.getElementById("saleQty");
+      const saleUnitPrice = document.getElementById("saleUnitPrice");
+      const saleTotalPrice = document.getElementById("saleTotalPrice");
+      const lblTotalPrice = document.getElementById("lblTotalPrice");
+
+      const recalcSaleTotal = () => {
+        const q = parseFloat(saleQty.value) || 0;
+        const u = parseFloat(saleUnitPrice.value) || 0;
+        const total = q * u;
+        saleTotalPrice.value = total.toFixed(2);
+        lblTotalPrice.textContent = "฿ " + total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      };
+      
+      const recalcSaleUnit = () => {
+        const q = parseFloat(saleQty.value) || 1;
+        const t = parseFloat(saleTotalPrice.value) || 0;
+        saleUnitPrice.value = (t / q).toFixed(2);
+      };
+
+      saleQty.addEventListener("input", recalcSaleTotal);
+      saleUnitPrice.addEventListener("input", recalcSaleTotal);
+      saleTotalPrice.addEventListener("input", () => {
+        recalcSaleUnit();
+        lblTotalPrice.textContent = "฿ " + (parseFloat(saleTotalPrice.value) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      });
+
+      // Interactive Quantity Buttons
+      document.getElementById("btnQtyDec").addEventListener("click", () => {
+        const current = parseInt(saleQty.value) || 1;
+        if (current > 1) {
+          saleQty.value = current - 1;
+          recalcSaleTotal();
+        }
+      });
+      document.getElementById("btnQtyInc").addEventListener("click", () => {
+        const current = parseInt(saleQty.value) || 0;
+        saleQty.value = current + 1;
+        recalcSaleTotal();
+      });
+
+      // Add Custom Course
+      document.getElementById("btnAddCustomCourse").addEventListener("click", () => {
+        const course = prompt("กรอกรหัสคอร์สเรียนใหม่:");
+        if (course && course.trim()) {
+          const code = course.trim().toUpperCase();
+          const select = document.getElementById("saleCode");
+          
+          let exists = false;
+          for (let i = 0; i < select.options.length; i++) {
+            if (select.options[i].value === code) {
+              exists = true;
+              select.selectedIndex = i;
+              break;
+            }
+          }
+          if (!exists) {
+            const opt = document.createElement("option");
+            opt.value = code;
+            opt.textContent = code;
+            select.appendChild(opt);
+            select.value = code;
+          }
+        }
+      });
+
+      // Edit Course Name
+      const btnEditCourseName = document.getElementById("btnEditCourseName");
+      if (btnEditCourseName) {
+        btnEditCourseName.addEventListener("click", () => {
+          const select = document.getElementById("saleCode");
+          const currentVal = select.value || "";
+          const editedName = prompt("พิมพ์แก้ไขชื่อคอร์สเรียน:", currentVal);
+          if (editedName && editedName.trim()) {
+            const newCode = editedName.trim().toUpperCase();
+            let exists = false;
+            for (let i = 0; i < select.options.length; i++) {
+              if (select.options[i].value === newCode) {
+                exists = true;
+                select.selectedIndex = i;
+                break;
+              }
+            }
+            if (!exists) {
+              const opt = document.createElement("option");
+              opt.value = newCode;
+              opt.textContent = newCode;
+              select.appendChild(opt);
+              select.value = newCode;
+            }
+          }
+        });
+      }
+
+      // Autofill price, qty, and total if selecting existing course in sales
+      function autofillSaleDetails(selectedProduct) {
+        if (!selectedProduct) return;
+        const normSelected = selectedProduct.replace(/\s+/g, "").toUpperCase();
+        const activeData = db[currentKey];
+        if (activeData && activeData.sales) {
+          let totalQty = 0;
+          let totalPrice = 0;
+          let unitPrice = 0;
+          activeData.sales.forEach(sale => {
+            if (sale.code && sale.code.replace(/\s+/g, "").toUpperCase() === normSelected) {
+              totalQty += parseInt(sale.qty) || 0;
+              totalPrice += parseFloat(sale.totalPrice) || 0;
+              if (sale.unitPrice) unitPrice = parseFloat(sale.unitPrice);
+            }
+          });
+          if (totalQty > 0) {
+            saleQty.value = totalQty;
+            saleTotalPrice.value = totalPrice.toFixed(2);
+            saleUnitPrice.value = unitPrice > 0 ? unitPrice.toFixed(2) : (totalPrice / totalQty).toFixed(2);
+            recalcSaleTotal();
+          } else {
+            saleQty.value = 1;
+            if (unitPrice > 0) saleUnitPrice.value = unitPrice.toFixed(2);
+            recalcSaleTotal();
+          }
+        }
+      }
+
+      document.getElementById("saleCode").addEventListener("change", (e) => {
+        autofillSaleDetails(e.target.value);
+      });
+
+      // Distribution Split auto-calculation (divides total by 3)
+      const distPerPerson = document.getElementById("distPerPerson");
+      const distTotal = document.getElementById("distTotal");
+      const lblDistTotal = document.getElementById("lblDistTotal");
+
+      const updateDistDisplay = (total) => {
+        lblDistTotal.textContent = "฿ " + total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      };
+
+      distPerPerson.addEventListener("input", () => {
+        const p = parseFloat(distPerPerson.value) || 0;
+        const total = p * 3;
+        distTotal.value = total.toFixed(2);
+        updateDistDisplay(total);
+      });
+
+      distTotal.addEventListener("input", () => {
+        const t = parseFloat(distTotal.value) || 0;
+        distPerPerson.value = (t / 3).toFixed(2);
+        updateDistDisplay(t);
+      });
+
+      // Setup Slip uploads listeners for receipts
+      setupSlipUploads("expSlips", "expSlipPreviews");
+      setupSlipUploads("adSlips", "adSlipPreviews");
+      setupSlipUploads("stockSlips", "stockSlipPreviews");
+      setupSlipUploads("distSlips", "distSlipPreviews");
+
+      // Form submissions
+      document.getElementById("formSale").addEventListener("submit", (e) => { e.preventDefault(); submitSaleForm(); });
+      document.getElementById("formExpense").addEventListener("submit", (e) => { e.preventDefault(); submitExpenseForm(); });
+      document.getElementById("formAd").addEventListener("submit", (e) => { e.preventDefault(); submitAdForm(); });
+      document.getElementById("formStock").addEventListener("submit", (e) => { e.preventDefault(); submitStockForm(); });
+      document.getElementById("formDistribution").addEventListener("submit", (e) => { e.preventDefault(); submitDistributionForm(); });
+
+      // Cancel button listeners
+      document.getElementById("btnCancelSale").addEventListener("click", closeLiffWindow);
+      document.getElementById("btnCancelExpense").addEventListener("click", closeLiffWindow);
+      document.getElementById("btnCancelAd").addEventListener("click", closeLiffWindow);
+      document.getElementById("btnCancelStock").addEventListener("click", closeLiffWindow);
+      document.getElementById("btnCancelDistribution").addEventListener("click", closeLiffWindow);
+    }
+
+    // Set up file input slip compression & previews
+    function setupSlipUploads(inputId, previewId) {
+      const input = document.getElementById(inputId);
+      const preview = document.getElementById(previewId);
+      if (!input || !preview) return;
+
+      input.addEventListener("change", async (e) => {
+        const files = Array.from(e.target.files);
+        for (const file of files) {
+          try {
+            const base64 = await compressImage(file);
+            activeSlips.push(base64);
+            
+            // Create preview thumbnail
+            const item = document.createElement("div");
+            item.className = "preview-item";
+            
+            const img = document.createElement("img");
+            img.src = base64;
+            item.appendChild(img);
+
+            const removeBtn = document.createElement("button");
+            removeBtn.type = "button";
+            removeBtn.className = "remove-btn";
+            removeBtn.innerHTML = "×";
+            removeBtn.onclick = () => {
+              const idx = activeSlips.indexOf(base64);
+              if (idx > -1) activeSlips.splice(idx, 1);
+              item.remove();
+            };
+            item.appendChild(removeBtn);
+
+            preview.appendChild(item);
+          } catch (err) {
+            console.error("Compression failed:", err);
+          }
+        }
+        input.value = ""; // reset files input
+      });
+    }
+
+    // --- FORM SUBMISSIONS TO API & STORAGE ---
+
+    async function showSuccess(title, desc) {
+      document.getElementById("successOverlay").classList.add("show");
+      document.getElementById("successDesc").textContent = desc;
+      setTimeout(() => {
+        closeLiffWindow();
+      }, 1600);
+    }
+
+    async function executeSubmit(btnId, dataPayload, actionApiName, telegramTitle, telegramDesc) {
+      const btn = document.getElementById(btnId);
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner"></span> <span>กำลังบันทึกข้อมูล...</span>`;
+
+      try {
+        const adminName = localStorage.getItem("sta69_admin_name") || "แอดมิน LINE";
+        
+        // Add meta info
+        dataPayload.adminName = adminName;
+        dataPayload.projectKey = currentKey;
+        dataPayload.projectTab = currentProject + currentYear.substring(2); // e.g. "Sta69"
+
+        // 1. Save to LocalStorage first (Optimistic update)
+        const activeData = db[currentKey];
+        if (actionApiName === "add-sale") {
+          const normCode = dataPayload.code.replace(/\s+/g, "").toUpperCase();
+          const existingIdx = activeData.sales.findIndex(s => s.code && s.code.replace(/\s+/g, "").toUpperCase() === normCode);
+          if (existingIdx !== -1) {
+            activeData.sales[existingIdx] = {
+              code: dataPayload.code,
+              qty: dataPayload.qty,
+              unitPrice: dataPayload.unitPrice,
+              totalPrice: dataPayload.totalPrice
+            };
+          } else {
+            activeData.sales.push({
+              code: dataPayload.code,
+              qty: dataPayload.qty,
+              unitPrice: dataPayload.unitPrice,
+              totalPrice: dataPayload.totalPrice
+            });
+          }
+          consolidateSales(activeData);
+        } else if (actionApiName === "add-expense") {
+          activeData.expenses.push({
+            date: dataPayload.date,
+            description: dataPayload.description,
+            price: dataPayload.price,
+            note: dataPayload.note,
+            slips: activeSlips
+          });
+        } else if (actionApiName === "add-ad") {
+          activeData.ads.push({
+            date: dataPayload.date,
+            description: dataPayload.description,
+            price: dataPayload.price,
+            slips: activeSlips
+          });
+        } else if (actionApiName === "receive-stock") {
+          activeData.stockLogs.push({
+            date: dataPayload.date,
+            code: dataPayload.code,
+            qty: dataPayload.qty,
+            slips: activeSlips
+          });
+          
+          if (!activeData.stock) activeData.stock = [];
+          let bk = activeData.stock.find(b => b.code === dataPayload.code);
+          if (!bk) {
+            bk = { code: dataPayload.code, totalQty: 0, soldQty: 0, remainingQty: 0 };
+            activeData.stock.push(bk);
+          }
+          bk.totalQty = (bk.totalQty || 0) + parseInt(dataPayload.qty);
+          bk.remainingQty = (bk.totalQty || 0) - (bk.soldQty || 0);
+        } else if (actionApiName === "add-distribution") {
+          activeData.distributions.push({
+            date: dataPayload.date,
+            perPerson: dataPayload.perPerson,
+            total: dataPayload.total,
+            note: dataPayload.note,
+            slips: activeSlips
+          });
+        }
+
+        if (!db.historyLogs) db.historyLogs = [];
+        const actionLabel = actionApiName === "add-sale" ? "ยอดสมัคร" : (actionApiName === "add-ad" ? "ค่าโฆษณา" : (actionApiName === "receive-stock" ? "สต็อกหนังสือ" : (actionApiName === "add-distribution" ? "ส่วนแบ่งหุ้นส่วน" : "รายจ่าย")));
+        db.historyLogs.unshift({
+          logId: "LOG_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+          timestamp: new Date().toISOString(),
+          project: dataPayload.projectTab,
+          editor: adminName,
+          actionType: actionLabel,
+          details: {
+            code: dataPayload.code || "",
+            qty: dataPayload.qty || 0,
+            price: dataPayload.totalPrice || dataPayload.price || dataPayload.total || 0,
+            desc: dataPayload.description || "",
+            note: dataPayload.note || ""
+          },
+          status: "Active"
+        });
+
+        localStorage.setItem("sta69_revenue_tracker_db", JSON.stringify(db));
+
+        // 2. Call Google Sheets API Web App (Network Save)
+        try {
+          const ctxUserId = (window.liff && liff.getContext) ? (liff.getContext()?.userId || "") : "";
+          const effectiveUserId = lineUserId || ctxUserId || "";
+
+          let gasUrl = `${GAS_ENDPOINT}?action=${actionApiName}&project=${encodeURIComponent(dataPayload.projectTab)}&adminName=${encodeURIComponent(adminName)}&userId=${encodeURIComponent(effectiveUserId)}`;
+          for (const [key, value] of Object.entries(dataPayload)) {
+            if (key !== "adminName" && key !== "projectTab" && key !== "projectKey") {
+              gasUrl += `&${key}=${encodeURIComponent(value)}`;
+            }
+          }
+          
+          const response = await fetch(gasUrl, {
+            method: "POST",
+            mode: "cors",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({ slips: activeSlips })
+          });
+          const rawText = await response.text();
+          console.log("GAS response:", rawText);
+        } catch (netErr) {
+          console.warn("Google Sheets network notice (saved locally):", netErr);
+        }
+
+        // 3. Send Telegram Notification
+        const telegramPayload = {
+          title: telegramTitle,
+          details: telegramDesc,
+          slips: activeSlips
+        };
+        fetch(`${GAS_ENDPOINT}?action=send-telegram-notification`, {
+          method: "POST",
+          mode: "cors",
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify(telegramPayload)
+        }).catch(e => console.error("Telegram notification error:", e));
+
+        // Display success confirmation screen
+        showSuccess("บันทึกเรียบร้อย", `อัปเดตข้อมูลของงาน ${currentProject} (${currentYear}) สำเร็จแล้วครับ`);
+
+      } catch (err) {
+        console.error("Submission error:", err);
+        alert(`เกิดข้อผิดพลาดในการบันทึกข้อมูล: ${err.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    }
+
+    function submitSaleForm() {
+      const code = document.getElementById("saleCode").value;
+      const qty = parseInt(document.getElementById("saleQty").value) || 1;
+      const unitPrice = parseFloat(document.getElementById("saleUnitPrice").value) || 0;
+      const totalPrice = parseFloat(document.getElementById("saleTotalPrice").value) || 0;
+
+      if (!code) {
+        alert("กรุณาเลือกคอร์สเรียน");
+        return;
+      }
+
+      const payload = { code, qty, unitPrice, totalPrice };
+      const desc = `• รหัสคอร์ส: <b>${code}</b>\n• จำนวน: <b>${qty.toLocaleString()} คน</b>\n• ราคารวม: <b>${totalPrice.toLocaleString()} บาท</b>`;
+      executeSubmit("btnSubmitSale", payload, "add-sale", "➕ <b>บันทึกยอดขายคอร์สใหม่ (ผ่าน LINE)</b>", desc);
+    }
+
+    function submitExpenseForm() {
+      const date = document.getElementById("expDate").value;
+      const description = document.getElementById("expDesc").value.trim();
+      const price = parseFloat(document.getElementById("expPrice").value) || 0;
+      const note = document.getElementById("expNote").value.trim();
+
+      if (!description || price <= 0) {
+        alert("กรุณากรอกรายละเอียดรายจ่ายและจำนวนเงิน");
+        return;
+      }
+
+      const parts = date.split('-');
+      const sheetsDate = `${parts[2]}/${parts[1]}/${parseInt(parts[0]) + 543}`;
+
+      const payload = { date: sheetsDate, description, price, note };
+      const desc = `• รายการ: <b>${description}</b>\n• จำนวนเงิน: <b>${price.toLocaleString()} บาท</b>\n• หมายเหตุ: ${note || "-"}`;
+      executeSubmit("btnSubmitExpense", payload, "add-expense", "➕ <b>บันทึกรายจ่ายอื่น ๆ (ผ่าน LINE)</b>", desc);
+    }
+
+    function submitAdForm() {
+      const date = document.getElementById("adDate").value;
+      const description = document.getElementById("adDesc").value.trim();
+      const price = parseFloat(document.getElementById("adPrice").value) || 0;
+
+      if (!description || price <= 0) {
+        alert("กรุณากรอกแพลตฟอร์มโฆษณาและจำนวนเงิน");
+        return;
+      }
+
+      const parts = date.split('-');
+      const sheetsDate = `${parts[2]}/${parts[1]}/${parseInt(parts[0]) + 543}`;
+
+      const payload = { date: sheetsDate, description, price };
+      const desc = `• แพลตฟอร์ม: <b>${description}</b>\n• จำนวนเงิน: <b>${price.toLocaleString()} บาท</b>`;
+      executeSubmit("btnSubmitAd", payload, "add-ad", "➕ <b>บันทึกค่าโฆษณาใหม่ (ผ่าน LINE)</b>", desc);
+    }
+
+    function submitStockForm() {
+      const date = document.getElementById("stockDate").value;
+      const code = document.getElementById("stockBookSelect").value;
+      const qty = parseInt(document.getElementById("stockQty").value) || 0;
+
+      if (!code || qty <= 0) {
+        alert("กรุณาเลือกประเภทหนังสือและจำนวน");
+        return;
+      }
+
+      const parts = date.split('-');
+      const sheetsDate = `${parts[2]}/${parts[1]}/${parseInt(parts[0]) + 543}`;
+
+      const payload = { date: sheetsDate, code, qty };
+      const desc = `• หนังสือ: <b>${code}</b>\n• จำนวนรับเข้า: <b>${qty.toLocaleString()} เล่ม</b>`;
+      executeSubmit("btnSubmitStock", payload, "receive-stock", "➕ <b>รับหนังสือเข้าสต็อก (ผ่าน LINE)</b>", desc);
+    }
+
+    function submitDistributionForm() {
+      const date = document.getElementById("distDate").value;
+      const perPerson = parseFloat(document.getElementById("distPerPerson").value) || 0;
+      const total = parseFloat(document.getElementById("distTotal").value) || 0;
+      const note = document.getElementById("distNote").value.trim();
+
+      if (perPerson <= 0 || total <= 0) {
+        alert("กรุณากรอกยอดเงินปันส่วนหุ้นส่วน");
+        return;
+      }
+
+      const parts = date.split('-');
+      const sheetsDate = `${parts[2]}/${parts[1]}/${parseInt(parts[0]) + 543}`;
+
+      const payload = { date: sheetsDate, perPerson, total, note };
+      const desc = `• แบ่งคนละ: <b>${perPerson.toLocaleString()} บาท</b>\n• ยอดรวม: <b>${total.toLocaleString()} บาท</b>\n• หมายเหตุ: ${note || "-"}`;
+      executeSubmit("btnSubmitDistribution", payload, "add-distribution", "➕ <b>บันทึกส่วนแบ่งปันผลใหม่ (ผ่าน LINE)</b>", desc);
+    }
+  </script>
+</body>
+</html>
