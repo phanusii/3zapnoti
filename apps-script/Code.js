@@ -217,8 +217,8 @@ function handleApiAction(e) {
   }
 
   if (action === "get-web-database") {
-    const jsonStr = PropertiesService.getScriptProperties().getProperty("WEB_APP_DATABASE_JSON") || "{}";
-    return ContentService.createTextOutput(jsonStr)
+    const webDb = getWebDatabase();
+    return ContentService.createTextOutput(JSON.stringify(webDb))
       .setMimeType(ContentService.MimeType.JSON);
   }
 
@@ -328,13 +328,103 @@ function handleApiAction(e) {
 
 function getWebDatabase() {
   const jsonStr = PropertiesService.getScriptProperties().getProperty("WEB_APP_DATABASE_JSON");
-  if (!jsonStr) return null;
-  try {
-    return JSON.parse(jsonStr);
-  } catch (e) {
-    Logger.log("Error parsing WEB_APP_DATABASE_JSON: " + e);
-    return null;
+  let webDb = {};
+  if (jsonStr) {
+    try {
+      webDb = JSON.parse(jsonStr) || {};
+    } catch (e) {
+      webDb = {};
+    }
   }
+  
+  // Merge authoritative Google Sheets data into webDb so Web App and LINE summary cards are ALWAYS 100% synced
+  try {
+    const sheetsData = getAllSheetsData();
+    Object.keys(sheetsData).forEach(function(key) {
+      if (!webDb[key]) webDb[key] = {};
+      const sheetProj = sheetsData[key];
+      
+      // 1. Sales
+      if (Array.isArray(sheetProj.sales) && sheetProj.sales.length > 0) {
+        webDb[key].sales = sheetProj.sales;
+      }
+      
+      // 2. Ads
+      if (Array.isArray(sheetProj.ads)) {
+        if (!Array.isArray(webDb[key].ads)) webDb[key].ads = [];
+        sheetProj.ads.forEach(function(sAd) {
+          const sDateFormatted = formatThaiDate(sAd.date);
+          const exists = webDb[key].ads.some(function(wAd) {
+            const wDateFormatted = formatThaiDate(wAd.date);
+            const descMatch = (wAd.description || wAd.desc || "").trim().toLowerCase() === (sAd.description || "").trim().toLowerCase();
+            const priceMatch = Math.abs((parseFloat(wAd.price) || 0) - (parseFloat(sAd.price) || 0)) < 0.1;
+            return descMatch && priceMatch;
+          });
+          if (!exists) {
+            webDb[key].ads.push(sAd);
+          }
+        });
+      }
+
+      // 3. Expenses
+      if (Array.isArray(sheetProj.expenses)) {
+        if (!Array.isArray(webDb[key].expenses)) webDb[key].expenses = [];
+        sheetProj.expenses.forEach(function(sExp) {
+          const exists = webDb[key].expenses.some(function(wExp) {
+            const descMatch = (wExp.description || wExp.desc || "").trim().toLowerCase() === (sExp.description || "").trim().toLowerCase();
+            const priceMatch = Math.abs((parseFloat(wExp.price) || 0) - (parseFloat(sExp.price) || 0)) < 0.1;
+            return descMatch && priceMatch;
+          });
+          if (!exists) {
+            webDb[key].expenses.push(sExp);
+          }
+        });
+      }
+
+      // 4. Distributions
+      if (Array.isArray(sheetProj.distributions)) {
+        if (!Array.isArray(webDb[key].distributions)) webDb[key].distributions = [];
+        sheetProj.distributions.forEach(function(sDist) {
+          const exists = webDb[key].distributions.some(function(wDist) {
+            return Math.abs((parseFloat(wDist.total) || 0) - (parseFloat(sDist.total) || 0)) < 0.1;
+          });
+          if (!exists) {
+            webDb[key].distributions.push(sDist);
+          }
+        });
+      }
+
+      // 5. Stock
+      if (Array.isArray(sheetProj.stock) && sheetProj.stock.length > 0) {
+        if (!Array.isArray(webDb[key].stock)) webDb[key].stock = [];
+        sheetProj.stock.forEach(function(sStk) {
+          const normCode = (sStk.bookCode || "").trim().toLowerCase();
+          let existing = webDb[key].stock.find(function(wStk) { return (wStk.code || "").trim().toLowerCase() === normCode; });
+          if (existing) {
+            if (sStk.received > (existing.add || 0)) {
+              existing.add = sStk.received;
+              existing.remaining = sStk.received - (existing.sold || 0);
+            }
+          } else {
+            webDb[key].stock.push({
+              code: (sStk.bookCode || "").toUpperCase(),
+              initial: 0,
+              add: sStk.received,
+              sold: 0,
+              remaining: sStk.received
+            });
+          }
+        });
+      }
+    });
+    
+    // Save merged webDb back to PropertiesService
+    saveWebDatabase(webDb);
+  } catch (err) {
+    Logger.log("Error merging sheetsData in getWebDatabase: " + err.toString());
+  }
+
+  return webDb;
 }
 
 function saveWebDatabase(webDbObj) {
