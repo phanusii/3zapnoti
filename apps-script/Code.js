@@ -299,11 +299,10 @@ function handleApiAction(e) {
     const code = fixThaiEncoding(e.parameter.code || "");
     const qty = parseInt(e.parameter.qty || "1", 10);
     const totalPrice = parseFloat(e.parameter.totalPrice || "0");
-    if (!code || !isFinite(qty) || qty <= 0 || !isFinite(totalPrice) || totalPrice < 0) {
+    if (!code || !isFinite(qty) || qty < 0 || !isFinite(totalPrice) || totalPrice < 0) {
       return completeTransaction({ status: "error", transactionId: transactionId, message: "❌ ข้อมูลยอดสมัครไม่ครบหรือไม่ถูกต้อง" });
     }
-    const msg = `รายรับ ${code} ${qty} ${totalPrice}`;
-    const result = handleIncome(activeTabName, msg, /^รายรับ\s+(.+?)\s+(\d+)\s+(\d+(?:\.\d+)?)$/i, adminName);
+    const result = handleIncomeAbsolute(activeTabName, code, qty, totalPrice, adminName);
     
     try {
       if (!userId) throw new Error("No LINE user ID; skip broadcast");
@@ -617,6 +616,44 @@ function handleIncome(activeTabName, message, regex, editor) {
   logSystemAction(activeTabName, "ยอดสมัคร", editor, { code: code, qty: qty, price: totalPrice });
 
   return `✅ บันทึกรายรับสำเร็จ!\n\n🛍️ สินค้า: ${code}\n➕ จำนวนเพิ่ม: ${qty} คน (รวมสะสม: ${currentQty + qty} คน)\n💰 ยอดเพิ่ม: ${totalPrice.toLocaleString()} บาท`;
+}
+
+// LIFF is an editor for the current course totals, not an "add another sale"
+// command. Set the requested latest totals so users can increase or decrease
+// any course without having to calculate a delta themselves.
+function handleIncomeAbsolute(activeTabName, code, qty, totalPrice, editor) {
+  if (!editor) editor = "LINE หุ้นส่วน";
+  const cleanCode = String(code || "").trim().toUpperCase();
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(activeTabName);
+  if (!sheet) return `❌ ไม่พบหน้าชีต "${activeTabName}"`;
+
+  const values = sheet.getRange("A1:C15").getValues();
+  let rowIdx = -1;
+  for (let i = 2; i < Math.min(10, values.length); i++) {
+    const rowCode = values[i][0] ? values[i][0].toString().replace(/\s+/g, "").toUpperCase() : "";
+    if (rowCode && rowCode === cleanCode.replace(/\s+/g, "")) {
+      rowIdx = i + 1;
+      break;
+    }
+  }
+  if (rowIdx === -1) return `❌ ไม่พบรหัสสินค้า "${cleanCode}" ในแถวที่ 3-10`;
+
+  const previousQty = parseInt(values[rowIdx - 1][1] || "0", 10);
+  const previousPrice = parseFloat((values[rowIdx - 1][2] || "0").toString().replace(/,/g, ""));
+  const qtyDelta = qty - previousQty;
+  const priceDelta = totalPrice - previousPrice;
+
+  if (qtyDelta === 0 && Math.abs(priceDelta) < 0.001) {
+    return `✅ ยอด ${cleanCode} เป็นข้อมูลล่าสุดอยู่แล้ว\n\n👥 จำนวน: ${qty} คน\n💰 ยอดรวม: ${totalPrice.toLocaleString()} บาท`;
+  }
+
+  sheet.getRange(rowIdx, 2).setValue(qty);
+  sheet.getRange(rowIdx, 3).setValue(totalPrice);
+  // Store the delta so cancelling this history item restores the prior totals.
+  logSystemAction(activeTabName, "ยอดสมัคร", editor, { code: cleanCode, qty: qtyDelta, price: priceDelta });
+
+  const direction = qtyDelta > 0 ? `เพิ่ม ${qtyDelta}` : (qtyDelta < 0 ? `ลด ${Math.abs(qtyDelta)}` : "จำนวนเท่าเดิม");
+  return `✅ อัปเดตยอดสมัครสำเร็จ!\n\n🛍️ คอร์ส: ${cleanCode}\n👥 ยอดล่าสุด: ${qty} คน (${direction})\n💰 ยอดรวมล่าสุด: ${totalPrice.toLocaleString()} บาท`;
 }
 
 function handleExpenseDirect(activeTabName, description, price, note, isAdsCost, editor, requestedDate) {

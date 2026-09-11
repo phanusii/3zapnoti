@@ -512,9 +512,9 @@
         </div>
       </div>
       <div class="form-group">
-        <label for="saleQty">จำนวน (Quantity)</label>
+        <label for="saleQty">ยอดสมัครล่าสุด (เพิ่มหรือลดได้)</label>
         <div class="qty-container" style="display: flex; align-items: center; gap: 12px; width: 100%;">
-          <input type="number" id="saleQty" class="glass-input" min="1" value="1" required style="flex: 1; text-align: center; font-size: 18px; font-weight: 600; height: 46px;">
+          <input type="number" id="saleQty" class="glass-input" min="0" value="0" required style="flex: 1; text-align: center; font-size: 18px; font-weight: 600; height: 46px;">
           <button type="button" class="circle-btn" id="btnQtyDec">−</button>
           <button type="button" class="circle-btn" id="btnQtyInc">+</button>
         </div>
@@ -732,6 +732,7 @@
     
     // File upload slip states
     let activeSlips = [];
+    let formInteractionStarted = false;
 
     // Parse URL params
     function getLiffAction() {
@@ -783,8 +784,12 @@
     window.addEventListener("DOMContentLoaded", async () => {
       loadCachedDb();
       setupLayout();
-      initLiff();
       setupFormListeners();
+      // Show the cached form immediately, then refresh its values from Sheets.
+      syncCanonicalDb().then(updated => {
+        if (updated && !formInteractionStarted) setupLayout();
+      });
+      initLiff();
     });
 
     // Load Database from LocalStorage cache
@@ -821,6 +826,29 @@
         if (db[k] && db[k].sales) consolidateSales(db[k]);
       });
       localStorage.setItem("sta69_revenue_tracker_db", JSON.stringify(db));
+    }
+
+    async function syncCanonicalDb() {
+      try {
+        const response = await fetch(`${GAS_ENDPOINT}?action=get-web-database&v=${Date.now()}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const cloudDb = await response.json();
+        if (!cloudDb || typeof cloudDb !== "object" || Array.isArray(cloudDb) || cloudDb.status === "error") {
+          throw new Error((cloudDb && cloudDb.message) || "รูปแบบฐานข้อมูลไม่ถูกต้อง");
+        }
+        db = cloudDb;
+        const requestedKey = `${currentProject}_${currentYear}`;
+        const matchingKey = Object.keys(db).find(key => key.toLowerCase() === requestedKey.toLowerCase());
+        currentKey = matchingKey || requestedKey;
+        if (!db[currentKey]) {
+          db[currentKey] = { sales: [], ads: [], expenses: [], distributions: [], stock: [], stockLogs: [] };
+        }
+        localStorage.setItem("sta69_revenue_tracker_db", JSON.stringify(db));
+        return true;
+      } catch (err) {
+        console.warn("ใช้ข้อมูลล่าสุดจากเครื่อง เนื่องจากดึงฐานข้อมูลกลางไม่สำเร็จ:", err);
+        return false;
+      }
     }
 
     function consolidateSales(data) {
@@ -1031,23 +1059,26 @@
     function populateSalesCourses() {
       const select = document.getElementById("saleCode");
       const defaultCourses = ["3ZAP A", "Combo S", "3 ZEED", "3ZAP P", "Combo X", "3 ZEED G"];
-      const uniqueCodes = new Set();
+      const uniqueCodes = new Map();
 
       const activeData = db[currentKey];
       if (activeData && activeData.sales) {
         activeData.sales.forEach(s => {
           if (s.code && !s.code.toLowerCase().includes("ยอดยกมาจาก")) {
-            uniqueCodes.add(s.code.trim().toUpperCase());
+            const displayCode = s.code.trim().replace(/\s+/g, " ").toUpperCase();
+            uniqueCodes.set(displayCode.replace(/\s+/g, ""), displayCode);
           }
         });
       }
       
-      if (uniqueCodes.size === 0) {
-        defaultCourses.forEach(c => uniqueCodes.add(c.toUpperCase()));
-      }
+      defaultCourses.forEach(course => {
+        const displayCode = course.toUpperCase();
+        const normalizedCode = displayCode.replace(/\s+/g, "");
+        if (!uniqueCodes.has(normalizedCode)) uniqueCodes.set(normalizedCode, displayCode);
+      });
 
       select.innerHTML = '<option value="" disabled selected>-- เลือกคอร์ส --</option>';
-      Array.from(uniqueCodes).sort().forEach(c => {
+      Array.from(uniqueCodes.values()).sort().forEach(c => {
         const opt = document.createElement("option");
         opt.value = c;
         opt.textContent = c;
@@ -1126,6 +1157,10 @@
 
     // Set up form listeners and auto calculators
     function setupFormListeners() {
+      document.querySelectorAll("form input, form select").forEach(field => {
+        field.addEventListener("input", () => { formInteractionStarted = true; });
+        field.addEventListener("change", () => { formInteractionStarted = true; });
+      });
       // LIFF Login Form handler
       const liffLoginForm = document.getElementById("liffLoginForm");
       if (liffLoginForm) {
@@ -1195,8 +1230,8 @@
 
       // Interactive Quantity Buttons
       document.getElementById("btnQtyDec").addEventListener("click", () => {
-        const current = parseInt(saleQty.value) || 1;
-        if (current > 1) {
+        const current = parseInt(saleQty.value) || 0;
+        if (current > 0) {
           saleQty.value = current - 1;
           recalcSaleTotal();
         }
@@ -1565,18 +1600,18 @@
 
     function submitSaleForm() {
       const code = document.getElementById("saleCode").value;
-      const qty = parseInt(document.getElementById("saleQty").value) || 1;
+      const qty = parseInt(document.getElementById("saleQty").value, 10);
       const unitPrice = parseFloat(document.getElementById("saleUnitPrice").value) || 0;
       const totalPrice = parseFloat(document.getElementById("saleTotalPrice").value) || 0;
 
-      if (!code) {
-        alert("กรุณาเลือกคอร์สเรียน");
+      if (!code || !Number.isInteger(qty) || qty < 0) {
+        alert("กรุณาเลือกคอร์สเรียนและระบุยอดสมัครล่าสุดตั้งแต่ 0 คนขึ้นไป");
         return;
       }
 
       const payload = { code, qty, unitPrice, totalPrice };
-      const desc = `• รหัสคอร์ส: <b>${code}</b>\n• จำนวน: <b>${qty.toLocaleString()} คน</b>\n• ราคารวม: <b>${totalPrice.toLocaleString()} บาท</b>`;
-      executeSubmit("btnSubmitSale", payload, "add-sale", "➕ <b>บันทึกยอดขายคอร์สใหม่ (ผ่าน LINE)</b>", desc);
+      const desc = `• รหัสคอร์ส: <b>${code}</b>\n• ยอดสมัครล่าสุด: <b>${qty.toLocaleString()} คน</b>\n• ราคารวมล่าสุด: <b>${totalPrice.toLocaleString()} บาท</b>`;
+      executeSubmit("btnSubmitSale", payload, "add-sale", "✏️ <b>อัปเดตยอดสมัครล่าสุด (ผ่าน LINE)</b>", desc);
     }
 
     function submitExpenseForm() {
