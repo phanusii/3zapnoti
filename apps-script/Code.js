@@ -224,10 +224,10 @@ function handleApiAction(e) {
 
   if (action === "send-flex-card") {
     const type = e.parameter ? e.parameter.type || "sale" : "sale";
-    const code = e.parameter ? e.parameter.code || "" : "";
+    const code = e.parameter ? fixThaiEncoding(e.parameter.code || "") : "";
     const qty = e.parameter ? parseInt(e.parameter.qty || "0", 10) : 0;
     const price = e.parameter ? parseFloat(e.parameter.price || "0") : 0;
-    const project = e.parameter ? e.parameter.project || "Sta70" : "Sta70";
+    const project = e.parameter ? fixThaiEncoding(e.parameter.project || "Sta70") : "Sta70";
     const senderUserId = e.parameter ? e.parameter.userId || "" : "";
 
     broadcastFlexCard(senderUserId, type, code, qty, price, project);
@@ -915,6 +915,8 @@ function getAllSheetsData() {
 
 function triggerLINEFlexCard(userId, type, code, qty, price, project) {
   try {
+    code = fixThaiEncoding(code);
+    project = fixThaiEncoding(project);
     const summary = getProjectSummaryData(project) || { totalSales: 0, salesCount: 0, salesBreakdown: [], totalAds: 0, adsCount: 0, totalOtherExpenses: 0, expensesCount: 0, balance: 0 };
     
     let title = "บันทึกรายการสำเร็จ";
@@ -2206,6 +2208,26 @@ function replyUnauthorizedFlex(replyToken) {
 }
 
 
+function fixThaiEncoding(text) {
+  if (!text || typeof text !== "string") return text;
+  if (/[\u00C0-\u00FF]/.test(text) || text.indexOf("à¸") !== -1 || text.indexOf("à¹") !== -1) {
+    try {
+      return decodeURIComponent(escape(text));
+    } catch (e) {
+      try {
+        const bytes = [];
+        for (let i = 0; i < text.length; i++) {
+          bytes.push(text.charCodeAt(i) & 0xff);
+        }
+        return Utilities.newBlob(bytes).getDataAsString("UTF-8");
+      } catch (err) {
+        return text;
+      }
+    }
+  }
+  return text;
+}
+
 function formatThaiDate(dateVal) {
   if (!dateVal) return "";
   
@@ -2343,6 +2365,8 @@ function getLineQuotaData() {
 
 function broadcastFlexCard(senderUserId, type, code, qty, price, project) {
   try {
+    code = fixThaiEncoding(code);
+    project = fixThaiEncoding(project);
     const properties = PropertiesService.getScriptProperties().getProperties();
     const uids = new Set();
     
