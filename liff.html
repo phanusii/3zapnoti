@@ -811,6 +811,8 @@
         currentYear = localStorage.getItem("sta69_current_year") || "2570";
       }
       currentKey = `${currentProject}_${currentYear}`;
+      const cachedProjectKey = Object.keys(db).find(key => key.toLowerCase() === currentKey.toLowerCase());
+      if (cachedProjectKey) currentKey = cachedProjectKey;
       
       if (!db[currentKey]) {
         db[currentKey] = { sales: [], ads: [], expenses: [], distributions: [], stock: [], stockLogs: [] };
@@ -880,6 +882,8 @@
                     currentProject = match[1].toUpperCase();
                     currentYear = "25" + match[2];
                     currentKey = `${currentProject}_${currentYear}`;
+                    const matchingProjectKey = Object.keys(db).find(key => key.toLowerCase() === currentKey.toLowerCase());
+                    if (matchingProjectKey) currentKey = matchingProjectKey;
                     localStorage.setItem("sta69_current_project", currentProject);
                     localStorage.setItem("sta69_current_year", currentYear);
                     localStorage.setItem("sta69_current_project_combo", currentKey);
@@ -1054,25 +1058,26 @@
     // Populate Stock Books dropdown
     function populateStockBooks() {
       const select = document.getElementById("stockBookSelect");
-      const defaultBooks = ["หนังสือ 3ZAP", "หนังสือ 3ZEED"];
-      const uniqueBooks = new Set();
+      const defaultBooks = ["3zap", "3zeed"];
+      const uniqueBooks = new Map();
 
       const activeData = db[currentKey];
       if (activeData && activeData.stock) {
         activeData.stock.forEach(b => {
-          if (b.code) uniqueBooks.add(b.code.trim());
+          const rawCode = (b.bookCode || b.code || "").trim();
+          if (rawCode) uniqueBooks.set(rawCode.toLowerCase(), rawCode);
         });
       }
 
       if (uniqueBooks.size === 0) {
-        defaultBooks.forEach(b => uniqueBooks.add(b));
+        defaultBooks.forEach(code => uniqueBooks.set(code, code));
       }
 
       select.innerHTML = '<option value="" disabled selected>-- เลือกหนังสือ --</option>';
-      Array.from(uniqueBooks).sort().forEach(b => {
+      Array.from(uniqueBooks.values()).sort().forEach(code => {
         const opt = document.createElement("option");
-        opt.value = b;
-        opt.textContent = b;
+        opt.value = code;
+        opt.textContent = `หนังสือ ${code.toUpperCase()}`;
         select.appendChild(opt);
       });
     }
@@ -1406,8 +1411,16 @@
         dataPayload.projectTab = currentProject + currentYear.substring(2); // e.g. "Sta69"
         dataPayload.transactionId = transactionId;
 
-        // 1. Save to LocalStorage first (Optimistic update)
-        const activeData = db[currentKey];
+        // 1. Save to LocalStorage first (Optimistic update). Sheets-derived
+        // snapshots may omit empty collections such as stockLogs.
+        let activeData = db[currentKey];
+        if (!activeData || typeof activeData !== "object" || Array.isArray(activeData)) {
+          activeData = {};
+          db[currentKey] = activeData;
+        }
+        ["sales", "ads", "expenses", "distributions", "stock", "stockLogs"].forEach(key => {
+          if (!Array.isArray(activeData[key])) activeData[key] = [];
+        });
         if (actionApiName === "add-sale") {
           const normCode = dataPayload.code.replace(/\s+/g, "").toUpperCase();
           const existingIdx = activeData.sales.findIndex(s => s.code && s.code.replace(/\s+/g, "").toUpperCase() === normCode);

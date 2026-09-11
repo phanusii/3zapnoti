@@ -82,9 +82,9 @@ function doPost(e) {
       return ContentService.createTextOutput("OK");
     }
 
-    const incomeRegex = /^รายรับ\s+(\S+)\s+(\d+)(?:\s+(\d+(?:\.\d+)?))?/i;
+    const incomeRegex = /^รายรับ\s+(.+?)\s+(\d+)\s+(\d+(?:\.\d+)?)$/i;
     const expenseRegex = /^รายจ่าย\s+(\S+)\s+(\d+(?:\.\d+)?)(?:\s+(.+))?/i;
-    const stockRegex = /^รับหนังสือ\s+(\S+)\s+(\d+)/i;
+    const stockRegex = /^รับหนังสือ\s+(.+?)\s+(\d+)$/i;
     const switchRegex = /^สลับ\s+(\S+)/i;
 
     // Load active tab for the user
@@ -299,10 +299,14 @@ function handleApiAction(e) {
     const code = fixThaiEncoding(e.parameter.code || "");
     const qty = parseInt(e.parameter.qty || "1", 10);
     const totalPrice = parseFloat(e.parameter.totalPrice || "0");
+    if (!code || !isFinite(qty) || qty <= 0 || !isFinite(totalPrice) || totalPrice < 0) {
+      return completeTransaction({ status: "error", transactionId: transactionId, message: "❌ ข้อมูลยอดสมัครไม่ครบหรือไม่ถูกต้อง" });
+    }
     const msg = `รายรับ ${code} ${qty} ${totalPrice}`;
-    const result = handleIncome(activeTabName, msg, /^รายรับ\s+(\S+)\s+(\d+)(?:\s+(\d+(?:\.\d+)?))?/i, adminName);
+    const result = handleIncome(activeTabName, msg, /^รายรับ\s+(.+?)\s+(\d+)\s+(\d+(?:\.\d+)?)$/i, adminName);
     
     try {
+      if (!userId) throw new Error("No LINE user ID; skip broadcast");
       broadcastFlexCard(userId, "sale", code, qty, totalPrice, activeTabName);
     } catch (err) {
       Logger.log("Error broadcasting flex card: " + err);
@@ -319,10 +323,14 @@ function handleApiAction(e) {
     const note = fixThaiEncoding(e.parameter.note || "");
     const date = fixThaiEncoding(e.parameter.date || "");
     const isAds = action === "add-ad";
+    if (!desc || !isFinite(price) || price <= 0 || !date) {
+      return completeTransaction({ status: "error", transactionId: transactionId, message: "❌ ข้อมูลรายจ่ายไม่ครบหรือไม่ถูกต้อง" });
+    }
     const result = handleExpenseDirect(activeTabName, desc, price, note, isAds, adminName, date);
     
     const cardType = isAds ? "ad" : "expense";
     try {
+      if (!userId) throw new Error("No LINE user ID; skip broadcast");
       broadcastFlexCard(userId, cardType, desc, 0, price, activeTabName);
     } catch (err) {
       Logger.log("Error broadcasting flex card: " + err);
@@ -336,10 +344,14 @@ function handleApiAction(e) {
   if (action === "receive-stock") {
     const code = fixThaiEncoding(e.parameter.code || "");
     const qty = parseInt(e.parameter.qty || "0", 10);
+    if (!code || !isFinite(qty) || qty <= 0) {
+      return completeTransaction({ status: "error", transactionId: transactionId, message: "❌ ข้อมูลรับหนังสือไม่ครบหรือไม่ถูกต้อง" });
+    }
     const msg = `รับหนังสือ ${code} ${qty}`;
-    const result = handleStock(activeTabName, msg, /^รับหนังสือ\s+(\S+)\s+(\d+)/i, adminName);
+    const result = handleStock(activeTabName, msg, /^รับหนังสือ\s+(.+?)\s+(\d+)$/i, adminName);
     
     try {
+      if (!userId) throw new Error("No LINE user ID; skip broadcast");
       broadcastFlexCard(userId, "stock", code, qty, 0, activeTabName);
     } catch (err) {
       Logger.log("Error broadcasting flex card: " + err);
@@ -355,10 +367,14 @@ function handleApiAction(e) {
     const total = parseFloat(e.parameter.total || "0");
     const note = fixThaiEncoding(e.parameter.note || `แบ่งคนละ ${perPerson} บาท`);
     const date = fixThaiEncoding(e.parameter.date || "");
+    if (!isFinite(perPerson) || perPerson <= 0 || !isFinite(total) || total <= 0 || !date) {
+      return completeTransaction({ status: "error", transactionId: transactionId, message: "❌ ข้อมูลส่วนแบ่งไม่ครบหรือไม่ถูกต้อง" });
+    }
     const desc = `ส่วนแบ่งปันผล (${note})`;
     const result = handleExpenseDirect(activeTabName, desc, total, note, false, adminName, date);
     
     try {
+      if (!userId) throw new Error("No LINE user ID; skip broadcast");
       broadcastFlexCard(userId, "distribution", desc, 0, total, activeTabName);
     } catch (err) {
       Logger.log("Error broadcasting flex card: " + err);
@@ -451,11 +467,20 @@ function saveWebDatabase(webDbObj) {
 function getDbKeyFromTabName(tabName) {
   if (!tabName) return "STA_2570";
   const norm = tabName.trim();
-  if (norm.includes("_")) return norm.toUpperCase();
+  function canonicalPrefix(prefix) {
+    const lower = String(prefix || "").toLowerCase();
+    if (lower === "sta") return "STA";
+    if (lower === "3za") return "3za";
+    return String(prefix || "").toUpperCase();
+  }
+  if (norm.includes("_")) {
+    const parts = norm.split("_");
+    return canonicalPrefix(parts[0]) + "_" + parts.slice(1).join("_");
+  }
   
   const match = norm.match(/^([a-zA-Z0-9]+?)(\d{2})$/);
   if (match) {
-    const prefix = match[1].toUpperCase();
+    const prefix = canonicalPrefix(match[1]);
     const yearShort = match[2];
     return prefix + "_25" + yearShort;
   }
@@ -562,6 +587,7 @@ function updateWebDatabaseStock(tabName, code, qty) {
 function handleIncome(activeTabName, message, regex, editor) {
   if (!editor) editor = "LINE หุ้นส่วน";
   const match = message.match(regex);
+  if (!match) return "❌ รูปแบบยอดสมัครไม่ถูกต้อง";
   const code = match[1].toUpperCase();
   const qty = parseInt(match[2], 10);
   const totalPrice = match[3] ? parseFloat(match[3]) : 0;
@@ -645,6 +671,7 @@ function handleExpenseDirect(activeTabName, description, price, note, isAdsCost,
 function handleExpense(activeTabName, message, regex, editor) {
   if (!editor) editor = "LINE หุ้นส่วน";
   const match = message.match(regex);
+  if (!match) return "❌ รูปแบบรายจ่ายไม่ถูกต้อง";
   const description = match[1];
   const price = parseFloat(match[2]);
   const note = match[3] || "";
@@ -700,6 +727,7 @@ function handleExpense(activeTabName, message, regex, editor) {
 function handleStock(activeTabName, message, regex, editor) {
   if (!editor) editor = "LINE หุ้นส่วน";
   const match = message.match(regex);
+  if (!match) return "❌ รูปแบบรับหนังสือไม่ถูกต้อง";
   const code = match[1].toLowerCase();
   const qty = parseInt(match[2], 10);
 
