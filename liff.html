@@ -723,6 +723,7 @@
   <script>
     // Config and State
     const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbxFD2loccRj_htSLTsDGY76ytQrvu80W_DzEIMMR7qhhUMIJMq7b6BUYxEBt6QUu9Ci/exec";
+    const FIREBASE_SNAPSHOT_URL = "https://sta69-ledger-98315-default-rtdb.asia-southeast1.firebasedatabase.app/snapshot.json";
     let db = {};
     let currentProject = "STA";
     let currentYear = "2569";
@@ -785,11 +786,15 @@
       loadCachedDb();
       setupLayout();
       setupFormListeners();
-      // Show the cached form immediately, then refresh its values from Sheets.
+      // Render the cached form immediately. Refresh from the fast Firebase mirror
+      // without waiting for LINE's slower session lookup. Each task only redraws
+      // when it has a meaningful change and the user has not started typing.
       syncCanonicalDb().then(updated => {
         if (updated && !formInteractionStarted) setupLayout();
       });
-      initLiff();
+      initLiff().then(projectChanged => {
+        if (projectChanged && !formInteractionStarted) setupLayout();
+      });
     });
 
     // Load Database from LocalStorage cache
@@ -830,7 +835,10 @@
 
     async function syncCanonicalDb() {
       try {
-        const response = await fetch(`${GAS_ENDPOINT}?action=get-web-database&v=${Date.now()}`);
+        let response = await fetch(`${FIREBASE_SNAPSHOT_URL}?v=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) {
+          response = await fetch(`${GAS_ENDPOINT}?action=get-web-database&v=${Date.now()}`);
+        }
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const cloudDb = await response.json();
         if (!cloudDb || typeof cloudDb !== "object" || Array.isArray(cloudDb) || cloudDb.status === "error") {
@@ -876,9 +884,9 @@
     }
 
     // Initialize LINE LIFF and sync active project from LINE session
-    function initLiff() {
-      liff.init({ liffId: "2010690090-AKybN7Fn" }) // Matches the production app settings
-        .then(async () => {
+    async function initLiff() {
+      try {
+        await liff.init({ liffId: "2010690090-AKybN7Fn" }); // Matches the production app settings
           console.log("LIFF Initialized.");
           if (liff.isLoggedIn()) {
             try {
@@ -907,16 +915,25 @@
                 if (data && data.activeProject) {
                   const match = data.activeProject.match(/^([a-zA-Z0-9]+?)(\d{2})$/);
                   if (match) {
-                    currentProject = match[1].toUpperCase();
-                    currentYear = "25" + match[2];
-                    currentKey = `${currentProject}_${currentYear}`;
-                    const matchingProjectKey = Object.keys(db).find(key => key.toLowerCase() === currentKey.toLowerCase());
-                    if (matchingProjectKey) currentKey = matchingProjectKey;
-                    localStorage.setItem("sta69_current_project", currentProject);
-                    localStorage.setItem("sta69_current_year", currentYear);
-                    localStorage.setItem("sta69_current_project_combo", currentKey);
-                    setupLayout();
-                    console.log("Synced active project from LINE session in LIFF:", currentKey);
+                    const nextProject = match[1].toUpperCase();
+                    const nextYear = "25" + match[2];
+                    const requestedKey = `${nextProject}_${nextYear}`;
+                    const matchingProjectKey = Object.keys(db).find(key => key.toLowerCase() === requestedKey.toLowerCase());
+                    const nextKey = matchingProjectKey || requestedKey;
+
+                    // Never switch the form underneath someone who has already
+                    // selected or typed a value.
+                    if (!formInteractionStarted || nextKey === currentKey) {
+                      const projectChanged = nextKey !== currentKey;
+                      currentProject = nextProject;
+                      currentYear = nextYear;
+                      currentKey = nextKey;
+                      localStorage.setItem("sta69_current_project", currentProject);
+                      localStorage.setItem("sta69_current_year", currentYear);
+                      localStorage.setItem("sta69_current_project_combo", currentKey);
+                      console.log("Synced active project from LINE session in LIFF:", currentKey);
+                      return projectChanged;
+                    }
                   }
                 }
               }
@@ -924,10 +941,11 @@
               console.error("Error fetching active project session in LIFF:", e);
             }
           }
-        })
-        .catch(err => {
-          console.error("LIFF failed to init:", err);
-        });
+        return false;
+      } catch (err) {
+        console.error("LIFF failed to init:", err);
+        return false;
+      }
     }
 
     function closeLiffWindow() {
@@ -1058,27 +1076,20 @@
     // Populate Sales dropdown
     function populateSalesCourses() {
       const select = document.getElementById("saleCode");
-      const defaultCourses = ["3ZAP A", "Combo S", "3 ZEED", "3ZAP P", "Combo X", "3 ZEED G"];
       const uniqueCodes = new Map();
 
       const activeData = db[currentKey];
       if (activeData && activeData.sales) {
         activeData.sales.forEach(s => {
           if (s.code && !s.code.toLowerCase().includes("ยอดยกมาจาก")) {
-            const displayCode = s.code.trim().replace(/\s+/g, " ").toUpperCase();
-            uniqueCodes.set(displayCode.replace(/\s+/g, ""), displayCode);
+            const displayCode = s.code.trim().replace(/\s+/g, " ");
+            uniqueCodes.set(displayCode.replace(/\s+/g, "").toUpperCase(), displayCode);
           }
         });
       }
-      
-      defaultCourses.forEach(course => {
-        const displayCode = course.toUpperCase();
-        const normalizedCode = displayCode.replace(/\s+/g, "");
-        if (!uniqueCodes.has(normalizedCode)) uniqueCodes.set(normalizedCode, displayCode);
-      });
 
       select.innerHTML = '<option value="" disabled selected>-- เลือกคอร์ส --</option>';
-      Array.from(uniqueCodes.values()).sort().forEach(c => {
+      Array.from(uniqueCodes.values()).forEach(c => {
         const opt = document.createElement("option");
         opt.value = c;
         opt.textContent = c;
