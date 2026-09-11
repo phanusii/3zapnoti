@@ -599,33 +599,33 @@ async function loadWebDatabaseFromGAS() {
     if (res.ok) {
       const cloudDb = await res.json();
       if (cloudDb && typeof cloudDb === "object" && Object.keys(cloudDb).length > 0) {
-        let updated = false;
         Object.keys(cloudDb).forEach(k => {
           if (cloudDb[k] && typeof cloudDb[k] === "object") {
-            if (!db[k]) {
-              db[k] = cloudDb[k];
-              updated = true;
-            } else {
-              ["sales", "ads", "expenses", "distributions", "stock", "stockLogs"].forEach(prop => {
-                if (Array.isArray(cloudDb[k][prop])) {
-                  if (!Array.isArray(db[k][prop])) {
-                    db[k][prop] = cloudDb[k][prop];
-                    updated = true;
-                  } else if (cloudDb[k][prop].length > db[k][prop].length) {
-                    db[k][prop] = cloudDb[k][prop];
-                    updated = true;
-                  }
-                }
-              });
-            }
+            const localProj = db[k] || {};
+            const cloudProj = cloudDb[k];
+
+            // Preserve slips
+            ["ads", "expenses", "distributions"].forEach(prop => {
+              if (Array.isArray(cloudProj[prop]) && Array.isArray(localProj[prop])) {
+                cloudProj[prop].forEach(cItem => {
+                  const match = localProj[prop].find(lItem => 
+                    (lItem.description || lItem.desc || "").trim() === (cItem.description || cItem.desc || "").trim() &&
+                    Math.abs((parseFloat(lItem.price || lItem.total) || 0) - (parseFloat(cItem.price || cItem.total) || 0)) < 0.1
+                  );
+                  if (match && match.slips) cItem.slips = match.slips;
+                  if (match && match.slip) cItem.slip = match.slip;
+                });
+              }
+            });
+
+            db[k] = cloudProj;
           }
         });
-        if (updated) {
-          localStorage.setItem("sta69_revenue_tracker_db", JSON.stringify(db));
-          initializeSelectors();
-          renderDashboard();
-          console.log("Web App database updated from cloud (GAS).");
-        }
+
+        localStorage.setItem("sta69_revenue_tracker_db", JSON.stringify(db));
+        initializeSelectors();
+        renderDashboard();
+        console.log("Web App database synchronized with cloud DB.");
       }
     }
   } catch (err) {
