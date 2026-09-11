@@ -1,6 +1,7 @@
 // ใส่ Channel Access Token จาก LINE Developers Console ที่นี่
 const LINE_ACCESS_TOKEN = "NHjsvK4l1ngTXVEJPucy7R1c1uUJ5Ux79tU/WLcQSc7ms8C80urt9K7IpubGum9/Q9RIEWUtfMGzk8wn7OKSglhwu64Ig6Xn+YIC1irfOU/BzQsmlyDswjEhbOLdAJyahfSKRdgBQk3yVvAtB8NxPAdB04t89/1O/w1cDnyilFU=";
 const SPREADSHEET_ID = "15PDmzbRGXocSvm42lksU9KNRcg7op31qc-b1JEo4wjQ";
+const FIREBASE_SNAPSHOT_URL = "https://sta69-ledger-98315-default-rtdb.asia-southeast1.firebasedatabase.app/snapshot.json";
 
 function getAuthPassword() {
   let pass = PropertiesService.getScriptProperties().getProperty("AUTH_PASSWORD");
@@ -249,7 +250,6 @@ function handleApiAction(e) {
   if (action === "refresh-web-database") {
     return jsonResponse({ status: "success", database: refreshWebDatabaseSnapshot() });
   }
-
   if (action === "send-flex-card") {
     const type = e.parameter ? e.parameter.type || "sale" : "sale";
     const code = e.parameter ? fixThaiEncoding(e.parameter.code || "") : "";
@@ -511,9 +511,67 @@ function saveWebDatabase(webDbObj) {
     for (let i = 0; i < chunks; i++) values["WEB_DB_CHUNK_" + i] = json.substring(i * chunkSize, (i + 1) * chunkSize);
     props.setProperties(values, false);
     for (let i = chunks; i < oldCount; i++) props.deleteProperty("WEB_DB_CHUNK_" + i);
+    mirrorWebDatabaseToFirebase(webDbObj);
   } catch (e) {
     Logger.log("Error saving WEB_APP_DATABASE_JSON: " + e);
   }
+}
+
+function mirrorWebDatabaseToFirebase(webDbObj) {
+  try {
+    const token = getFirebaseServiceAccountToken();
+    if (!token) throw new Error("Firebase service account is not configured");
+    const response = UrlFetchApp.fetch(FIREBASE_SNAPSHOT_URL + "?access_token=" + encodeURIComponent(token), {
+      method: "put",
+      contentType: "application/json",
+      payload: JSON.stringify(webDbObj),
+      muteHttpExceptions: true
+    });
+    if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
+      Logger.log("Firebase mirror rejected update: " + response.getResponseCode() + " " + response.getContentText());
+      return { ok: false, code: response.getResponseCode(), message: response.getContentText() };
+    }
+    return { ok: true, code: response.getResponseCode() };
+  } catch (e) {
+    Logger.log("Error updating Firebase mirror: " + e);
+    return { ok: false, code: 0, message: String(e) };
+  }
+}
+
+function getFirebaseServiceAccountToken() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get("FIREBASE_SERVICE_ACCOUNT_TOKEN");
+  if (cached) return cached;
+
+  const props = PropertiesService.getScriptProperties();
+  const clientEmail = props.getProperty("FIREBASE_SA_CLIENT_EMAIL");
+  const privateKey = (props.getProperty("FIREBASE_SA_PRIVATE_KEY") || "").replace(/\\n/g, "\n");
+  if (!clientEmail || !privateKey) return "";
+
+  const now = Math.floor(Date.now() / 1000);
+  const encode = function(value) {
+    return Utilities.base64EncodeWebSafe(JSON.stringify(value)).replace(/=+$/, "");
+  };
+  const unsigned = encode({ alg: "RS256", typ: "JWT" }) + "." + encode({
+    iss: clientEmail,
+    scope: "https://www.googleapis.com/auth/firebase.database https://www.googleapis.com/auth/userinfo.email",
+    aud: "https://oauth2.googleapis.com/token",
+    iat: now,
+    exp: now + 3600
+  });
+  const signature = Utilities.computeRsaSha256Signature(unsigned, privateKey);
+  const assertion = unsigned + "." + Utilities.base64EncodeWebSafe(signature).replace(/=+$/, "");
+  const response = UrlFetchApp.fetch("https://oauth2.googleapis.com/token", {
+    method: "post",
+    payload: {
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: assertion
+    }
+  });
+  const result = JSON.parse(response.getContentText());
+  if (!result.access_token) throw new Error("Could not create Firebase service account token");
+  cache.put("FIREBASE_SERVICE_ACCOUNT_TOKEN", result.access_token, 3300);
+  return result.access_token;
 }
 
 function updateWebDatabaseIncomeAbsolute(tabName, code, qty, totalPrice) {
@@ -973,7 +1031,7 @@ function doGet(e) {
       return ContentService.createTextOutput(JSON.stringify({ status: "success", database: refreshWebDatabaseSnapshot() }))
         .setMimeType(ContentService.MimeType.JSON);
     }
-    
+
     // 1. การทำงานสำหรับ LINE LIFF (ต้องเช็กสิทธิ์รายบุคคล)
     if (action === "send-flex-card") {
       const type = e.parameter.type || "sale";

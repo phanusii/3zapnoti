@@ -252,17 +252,11 @@ window.addEventListener("DOMContentLoaded", async () => {
   setupEventListeners();
   await loadDatabase();
   initializeSelectors();
-
-  // A previously verified cloud snapshot can render immediately. A lightweight
-  // version check updates it in the background only when LINE/web data changed.
-  const hasVerifiedSnapshot = Boolean(db && db._meta && db._meta.version);
-  if (hasVerifiedSnapshot) {
-    renderDashboard();
-    setCloudSyncState("ready");
-    loadWebDatabaseFromGAS();
-  } else {
-    await loadWebDatabaseFromGAS({ initial: true, force: true });
-  }
+  // Never block the whole dashboard on a network request. Render the last
+  // verified snapshot now and refresh from Firebase in the background.
+  renderDashboard();
+  setCloudSyncState("ready");
+  loadWebDatabaseFromGAS();
   // Keep dashboards on other devices close to real-time after a LIFF write.
   setInterval(() => loadWebDatabaseFromGAS(), 5000);
   window.addEventListener("focus", () => loadWebDatabaseFromGAS());
@@ -536,6 +530,12 @@ async function loadDatabase() {
     }
   }
 
+  // Legacy browser caches predate snapshot versioning and may contain stale
+  // totals. Replace them with the bundled, verified snapshot on first upgrade.
+  if (db && Object.keys(db).length > 0 && !(db._meta && db._meta.version)) {
+    db = {};
+  }
+
   if (!db || Object.keys(db).length === 0) {
     // Fetch from default JSON if local storage is empty
     try {
@@ -630,24 +630,20 @@ async function loadWebDatabaseFromGAS({ initial = false, force = false } = {}) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), initial ? 60000 : 30000);
   try {
-    if (!force && db && db._meta && db._meta.version) {
-      const versionUrl = `https://script.google.com/macros/s/AKfycbxFD2loccRj_htSLTsDGY76ytQrvu80W_DzEIMMR7qhhUMIJMq7b6BUYxEBt6QUu9Ci/exec?action=get-web-database-version&v=${Date.now()}`;
-      const versionRes = await fetch(versionUrl, { signal: controller.signal });
-      if (versionRes.ok) {
-        const versionInfo = await versionRes.json();
-        if (String(versionInfo.version || "") === String(db._meta.version)) {
-          setCloudSyncState("ready");
-          return true;
-        }
-      }
+    const firebaseUrl = `https://sta69-ledger-98315-default-rtdb.asia-southeast1.firebasedatabase.app/snapshot.json?v=${Date.now()}`;
+    let res = await fetch(firebaseUrl, { signal: controller.signal, cache: "no-store" });
+    // During a Firebase outage or before the first mirror is created, retain the
+    // existing Apps Script endpoint as a compatibility fallback.
+    if (!res.ok) {
+      const gasUrl = `https://script.google.com/macros/s/AKfycbxFD2loccRj_htSLTsDGY76ytQrvu80W_DzEIMMR7qhhUMIJMq7b6BUYxEBt6QUu9Ci/exec?action=get-web-database&v=${Date.now()}`;
+      res = await fetch(gasUrl, { signal: controller.signal });
     }
-    const gasUrl = `https://script.google.com/macros/s/AKfycbxFD2loccRj_htSLTsDGY76ytQrvu80W_DzEIMMR7qhhUMIJMq7b6BUYxEBt6QUu9Ci/exec?action=get-web-database&v=${Date.now()}`;
-    const res = await fetch(gasUrl, { signal: controller.signal });
     if (!res.ok) {
       throw new Error(`Cloud database request failed with HTTP ${res.status}`);
     }
 
     const cloudDb = await res.json();
+    if (cloudDb === null) return false;
     if (!cloudDb || typeof cloudDb !== "object" || Array.isArray(cloudDb)) {
       throw new Error("Cloud database returned an invalid payload");
     }
