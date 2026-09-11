@@ -188,6 +188,26 @@ function handleApiAction(e) {
   const rawProject = e.parameter ? (e.parameter.project || "Sta70") : "Sta70";
   const userId = e.parameter ? (e.parameter.userId || "") : "";
   const adminName = e.parameter ? (e.parameter.adminName || "LINE หุ้นส่วน") : "LINE หุ้นส่วน";
+  const transactionId = e.parameter ? String(e.parameter.transactionId || "").replace(/[^a-zA-Z0-9_-]/g, "").substring(0, 100) : "";
+  const mutationActions = ["add-sale", "add-expense", "add-ad", "receive-stock", "add-distribution"];
+  let transactionLock = null;
+  let transactionCache = null;
+  let transactionKey = "";
+
+  function jsonResponse(payload) {
+    return ContentService.createTextOutput(JSON.stringify(payload))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  function completeTransaction(payload) {
+    const failed = typeof payload.message === "string" && payload.message.indexOf("❌") === 0;
+    if (!failed && transactionKey && transactionCache) {
+      transactionCache.put(transactionKey, "complete", 21600);
+    }
+    if (transactionLock) transactionLock.releaseLock();
+    if (failed) payload.status = "error";
+    return jsonResponse(payload);
+  }
 
   if (action === "save-web-database") {
     let jsonStr = "";
@@ -254,8 +274,29 @@ function handleApiAction(e) {
     }
   }
 
+  // Serialize LIFF writes and make retries idempotent. A slow connection or a
+  // double tap must never append the same accounting transaction twice.
+  if (mutationActions.indexOf(action) !== -1 && transactionId) {
+    transactionLock = LockService.getScriptLock();
+    transactionLock.waitLock(15000);
+    transactionKey = "LIFF_TX_" + transactionId;
+    transactionCache = CacheService.getScriptCache();
+    if (transactionCache.get(transactionKey)) {
+      transactionLock.releaseLock();
+      const duplicateDb = getWebDatabase() || {};
+      return jsonResponse({
+        status: "success",
+        duplicate: true,
+        transactionId: transactionId,
+        projectKey: getDbKeyFromTabName(activeTabName),
+        projectData: duplicateDb[getDbKeyFromTabName(activeTabName)] || null,
+        message: "รายการนี้ถูกบันทึกไปแล้ว"
+      });
+    }
+  }
+
   if (action === "add-sale") {
-    const code = e.parameter.code || "";
+    const code = fixThaiEncoding(e.parameter.code || "");
     const qty = parseInt(e.parameter.qty || "1", 10);
     const totalPrice = parseFloat(e.parameter.totalPrice || "0");
     const msg = `รายรับ ${code} ${qty} ${totalPrice}`;
@@ -267,16 +308,18 @@ function handleApiAction(e) {
       Logger.log("Error broadcasting flex card: " + err);
     }
 
-    return ContentService.createTextOutput(JSON.stringify({ status: "success", message: result }))
-      .setMimeType(ContentService.MimeType.JSON);
+    const currentDb = getWebDatabase() || {};
+    const projectKey = getDbKeyFromTabName(activeTabName);
+    return completeTransaction({ status: "success", transactionId: transactionId, projectKey: projectKey, projectData: currentDb[projectKey] || null, message: result });
   }
 
   if (action === "add-expense" || action === "add-ad") {
     const desc = fixThaiEncoding(e.parameter.description || e.parameter.desc || "ค่าใช้จ่าย");
     const price = parseFloat(e.parameter.price || "0");
     const note = fixThaiEncoding(e.parameter.note || "");
+    const date = fixThaiEncoding(e.parameter.date || "");
     const isAds = action === "add-ad";
-    const result = handleExpenseDirect(activeTabName, desc, price, note, isAds, adminName);
+    const result = handleExpenseDirect(activeTabName, desc, price, note, isAds, adminName, date);
     
     const cardType = isAds ? "ad" : "expense";
     try {
@@ -285,8 +328,9 @@ function handleApiAction(e) {
       Logger.log("Error broadcasting flex card: " + err);
     }
 
-    return ContentService.createTextOutput(JSON.stringify({ status: "success", message: result }))
-      .setMimeType(ContentService.MimeType.JSON);
+    const currentDb = getWebDatabase() || {};
+    const projectKey = getDbKeyFromTabName(activeTabName);
+    return completeTransaction({ status: "success", transactionId: transactionId, projectKey: projectKey, projectData: currentDb[projectKey] || null, message: result });
   }
 
   if (action === "receive-stock") {
@@ -301,16 +345,18 @@ function handleApiAction(e) {
       Logger.log("Error broadcasting flex card: " + err);
     }
 
-    return ContentService.createTextOutput(JSON.stringify({ status: "success", message: result }))
-      .setMimeType(ContentService.MimeType.JSON);
+    const currentDb = getWebDatabase() || {};
+    const projectKey = getDbKeyFromTabName(activeTabName);
+    return completeTransaction({ status: "success", transactionId: transactionId, projectKey: projectKey, projectData: currentDb[projectKey] || null, message: result });
   }
 
   if (action === "add-distribution") {
     const perPerson = parseFloat(e.parameter.perPerson || "0");
     const total = parseFloat(e.parameter.total || "0");
     const note = fixThaiEncoding(e.parameter.note || `แบ่งคนละ ${perPerson} บาท`);
+    const date = fixThaiEncoding(e.parameter.date || "");
     const desc = `ส่วนแบ่งปันผล (${note})`;
-    const result = handleExpenseDirect(activeTabName, desc, total, note, false, adminName);
+    const result = handleExpenseDirect(activeTabName, desc, total, note, false, adminName, date);
     
     try {
       broadcastFlexCard(userId, "distribution", desc, 0, total, activeTabName);
@@ -318,8 +364,9 @@ function handleApiAction(e) {
       Logger.log("Error broadcasting flex card: " + err);
     }
 
-    return ContentService.createTextOutput(JSON.stringify({ status: "success", message: result }))
-      .setMimeType(ContentService.MimeType.JSON);
+    const currentDb = getWebDatabase() || {};
+    const projectKey = getDbKeyFromTabName(activeTabName);
+    return completeTransaction({ status: "success", transactionId: transactionId, projectKey: projectKey, projectData: currentDb[projectKey] || null, message: result });
   }
 
   return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "Action processed" }))
@@ -546,9 +593,9 @@ function handleIncome(activeTabName, message, regex, editor) {
   return `✅ บันทึกรายรับสำเร็จ!\n\n🛍️ สินค้า: ${code}\n➕ จำนวนเพิ่ม: ${qty} คน (รวมสะสม: ${currentQty + qty} คน)\n💰 ยอดเพิ่ม: ${totalPrice.toLocaleString()} บาท`;
 }
 
-function handleExpenseDirect(activeTabName, description, price, note, isAdsCost, editor) {
+function handleExpenseDirect(activeTabName, description, price, note, isAdsCost, editor, requestedDate) {
   if (!editor) editor = "LINE หุ้นส่วน";
-  const dateStr = formatThaiDate(new Date());
+  const dateStr = requestedDate || formatThaiDate(new Date());
 
   updateWebDatabaseExpense(activeTabName, description, price, note, isAdsCost);
 
@@ -770,6 +817,15 @@ function doGet(e) {
   try {
     const action = e.parameter.action;
     const userId = e.parameter.userId;
+
+    // The dashboard refreshes its local cache through a GET request. Keep this
+    // route in doGet as well as handleApiAction (POST) so both callers read the
+    // same canonical snapshot rebuilt from Google Sheets.
+    if (action === "get-web-database") {
+      const webDb = getWebDatabase();
+      return ContentService.createTextOutput(JSON.stringify(webDb || {}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
     
     // 1. การทำงานสำหรับ LINE LIFF (ต้องเช็กสิทธิ์รายบุคคล)
     if (action === "send-flex-card") {

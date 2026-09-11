@@ -256,7 +256,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   
   // Background cloud database sync (GAS Web App DB + LINE submissions)
   loadWebDatabaseFromGAS();
-  setInterval(() => loadWebDatabaseFromGAS(), 15000);
+  // Keep dashboards on other devices close to real-time after a LIFF write.
+  setInterval(() => loadWebDatabaseFromGAS(), 5000);
   window.addEventListener("focus", () => loadWebDatabaseFromGAS());
   
   // Background load and register active Telegram chat recipients
@@ -572,6 +573,7 @@ function consolidateSales(data) {
 }
 
 let gasDbSyncTimeout = null;
+let isCloudDbSyncing = false;
 function syncWebDatabaseToGAS() {
   if (gasDbSyncTimeout) clearTimeout(gasDbSyncTimeout);
   gasDbSyncTimeout = setTimeout(() => {
@@ -590,46 +592,67 @@ function syncWebDatabaseToGAS() {
 }
 
 async function loadWebDatabaseFromGAS() {
+  // A slow Apps Script response can take longer than the polling interval.
+  // Keep one request in flight so older responses cannot overwrite newer data.
+  if (isCloudDbSyncing) return;
+  isCloudDbSyncing = true;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
   try {
-    const gasUrl = "https://script.google.com/macros/s/AKfycbxFD2loccRj_htSLTsDGY76ytQrvu80W_DzEIMMR7qhhUMIJMq7b6BUYxEBt6QUu9Ci/exec?action=get-web-database";
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    const gasUrl = `https://script.google.com/macros/s/AKfycbxFD2loccRj_htSLTsDGY76ytQrvu80W_DzEIMMR7qhhUMIJMq7b6BUYxEBt6QUu9Ci/exec?action=get-web-database&v=${Date.now()}`;
     const res = await fetch(gasUrl, { signal: controller.signal });
-    clearTimeout(timeoutId);
-    if (res.ok) {
-      const cloudDb = await res.json();
-      if (cloudDb && typeof cloudDb === "object" && Object.keys(cloudDb).length > 0) {
-        Object.keys(cloudDb).forEach(k => {
-          if (cloudDb[k] && typeof cloudDb[k] === "object") {
-            const localProj = db[k] || {};
-            const cloudProj = cloudDb[k];
-
-            // Preserve slips
-            ["ads", "expenses", "distributions"].forEach(prop => {
-              if (Array.isArray(cloudProj[prop]) && Array.isArray(localProj[prop])) {
-                cloudProj[prop].forEach(cItem => {
-                  const match = localProj[prop].find(lItem => 
-                    (lItem.description || lItem.desc || "").trim() === (cItem.description || cItem.desc || "").trim() &&
-                    Math.abs((parseFloat(lItem.price || lItem.total) || 0) - (parseFloat(cItem.price || cItem.total) || 0)) < 0.1
-                  );
-                  if (match && match.slips) cItem.slips = match.slips;
-                  if (match && match.slip) cItem.slip = match.slip;
-                });
-              }
-            });
-
-            db[k] = cloudProj;
-          }
-        });
-
-        localStorage.setItem("sta69_revenue_tracker_db", JSON.stringify(db));
-        initializeSelectors();
-        renderDashboard();
-        console.log("Web App database synchronized with cloud DB.");
-      }
+    if (!res.ok) {
+      throw new Error(`Cloud database request failed with HTTP ${res.status}`);
     }
+
+    const cloudDb = await res.json();
+    if (!cloudDb || typeof cloudDb !== "object" || Array.isArray(cloudDb)) {
+      throw new Error("Cloud database returned an invalid payload");
+    }
+    if (cloudDb.status === "error") {
+      throw new Error(cloudDb.message || "Cloud database synchronization failed");
+    }
+
+    const projectEntries = Object.entries(cloudDb).filter(([, project]) =>
+      project &&
+      typeof project === "object" &&
+      !Array.isArray(project) &&
+      ["sales", "ads", "expenses", "distributions"].some(prop => Array.isArray(project[prop]))
+    );
+    if (projectEntries.length === 0) {
+      throw new Error("Cloud database response did not contain any projects");
+    }
+
+    projectEntries.forEach(([k, cloudProj]) => {
+      const localProj = db[k] || {};
+
+      // Preserve slips
+      ["ads", "expenses", "distributions"].forEach(prop => {
+        if (Array.isArray(cloudProj[prop]) && Array.isArray(localProj[prop])) {
+          cloudProj[prop].forEach(cItem => {
+            const match = localProj[prop].find(lItem =>
+              (lItem.description || lItem.desc || "").trim() === (cItem.description || cItem.desc || "").trim() &&
+              Math.abs((parseFloat(lItem.price || lItem.total) || 0) - (parseFloat(cItem.price || cItem.total) || 0)) < 0.1
+            );
+            if (match && match.slips) cItem.slips = match.slips;
+            if (match && match.slip) cItem.slip = match.slip;
+          });
+        }
+      });
+
+      db[k] = cloudProj;
+    });
+
+    localStorage.setItem("sta69_revenue_tracker_db", JSON.stringify(db));
+    initializeSelectors();
+    renderDashboard();
+    console.log("Web App database synchronized with cloud DB.");
   } catch (err) {
     console.warn("Cloud DB sync notice:", err);
+  } finally {
+    clearTimeout(timeoutId);
+    isCloudDbSyncing = false;
   }
 }
 

@@ -1286,6 +1286,15 @@
     async function executeSubmit(btnId, dataPayload, actionApiName, telegramTitle, telegramDesc) {
       const btn = document.getElementById(btnId);
       const originalText = btn.innerHTML;
+      const payloadSignature = JSON.stringify({ actionApiName, dataPayload, currentKey });
+      if (!btn.dataset.transactionId || btn.dataset.transactionPayload !== payloadSignature) {
+        btn.dataset.transactionId = (window.crypto && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : `liff-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        btn.dataset.transactionPayload = payloadSignature;
+      }
+      const transactionId = btn.dataset.transactionId;
+      const previousDbJson = JSON.stringify(db);
       btn.disabled = true;
       btn.innerHTML = `<span class="spinner"></span> <span>กำลังบันทึกข้อมูล...</span>`;
 
@@ -1296,6 +1305,7 @@
         dataPayload.adminName = adminName;
         dataPayload.projectKey = currentKey;
         dataPayload.projectTab = currentProject + currentYear.substring(2); // e.g. "Sta69"
+        dataPayload.transactionId = transactionId;
 
         // 1. Save to LocalStorage first (Optimistic update)
         const activeData = db[currentKey];
@@ -1379,29 +1389,35 @@
 
         localStorage.setItem("sta69_revenue_tracker_db", JSON.stringify(db));
 
-        // 2. Call Google Sheets API Web App (Network Save)
-        try {
-          const ctxUserId = (window.liff && liff.getContext) ? (liff.getContext()?.userId || "") : "";
-          const effectiveUserId = lineUserId || ctxUserId || "";
+        // 2. Save to the canonical Google Sheets database. Do not report
+        // success until the server confirms the write and returns its snapshot.
+        const ctxUserId = (window.liff && liff.getContext) ? (liff.getContext()?.userId || "") : "";
+        const effectiveUserId = lineUserId || ctxUserId || "";
 
-          let gasUrl = `${GAS_ENDPOINT}?action=${actionApiName}&project=${encodeURIComponent(dataPayload.projectTab)}&adminName=${encodeURIComponent(adminName)}&userId=${encodeURIComponent(effectiveUserId)}`;
-          for (const [key, value] of Object.entries(dataPayload)) {
-            if (key !== "adminName" && key !== "projectTab" && key !== "projectKey") {
-              gasUrl += `&${key}=${encodeURIComponent(value)}`;
-            }
+        let gasUrl = `${GAS_ENDPOINT}?action=${actionApiName}&project=${encodeURIComponent(dataPayload.projectTab)}&adminName=${encodeURIComponent(adminName)}&userId=${encodeURIComponent(effectiveUserId)}`;
+        for (const [key, value] of Object.entries(dataPayload)) {
+          if (key !== "adminName" && key !== "projectTab" && key !== "projectKey") {
+            gasUrl += `&${key}=${encodeURIComponent(value)}`;
           }
-          
-          const response = await fetch(gasUrl, {
-            method: "POST",
-            mode: "cors",
-            headers: { "Content-Type": "text/plain" },
-            body: JSON.stringify({ slips: activeSlips })
-          });
-          const rawText = await response.text();
-          console.log("GAS response:", rawText);
-        } catch (netErr) {
-          console.warn("Google Sheets network notice (saved locally):", netErr);
         }
+
+        const response = await fetch(gasUrl, {
+          method: "POST",
+          mode: "cors",
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify({ slips: activeSlips })
+        });
+        if (!response.ok) throw new Error(`ระบบบันทึกข้อมูลตอบกลับ HTTP ${response.status}`);
+
+        const result = await response.json();
+        if (!result || result.status !== "success") {
+          throw new Error((result && result.message) || "ระบบไม่ยืนยันการบันทึกข้อมูล");
+        }
+        if (result.projectData && result.projectKey) {
+          db[result.projectKey] = result.projectData;
+          localStorage.setItem("sta69_revenue_tracker_db", JSON.stringify(db));
+        }
+        console.log("GAS transaction confirmed:", result.transactionId || transactionId);
 
         // 3. Send Telegram Notification
         const telegramPayload = {
@@ -1409,17 +1425,24 @@
           details: telegramDesc,
           slips: activeSlips
         };
-        fetch(`${GAS_ENDPOINT}?action=send-telegram-notification`, {
-          method: "POST",
-          mode: "cors",
-          headers: { "Content-Type": "text/plain" },
-          body: JSON.stringify(telegramPayload)
-        }).catch(e => console.error("Telegram notification error:", e));
+        if (!result.duplicate) {
+          fetch(`${GAS_ENDPOINT}?action=send-telegram-notification`, {
+            method: "POST",
+            mode: "cors",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify(telegramPayload)
+          }).catch(e => console.error("Telegram notification error:", e));
+        }
+
+        delete btn.dataset.transactionId;
+        delete btn.dataset.transactionPayload;
 
         // Display success confirmation screen
         showSuccess("บันทึกเรียบร้อย", `อัปเดตข้อมูลของงาน ${currentProject} (${currentYear}) สำเร็จแล้วครับ`);
 
       } catch (err) {
+        db = JSON.parse(previousDbJson);
+        localStorage.setItem("sta69_revenue_tracker_db", previousDbJson);
         console.error("Submission error:", err);
         alert(`เกิดข้อผิดพลาดในการบันทึกข้อมูล: ${err.message}`);
       } finally {
