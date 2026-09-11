@@ -272,13 +272,13 @@ function handleApiAction(e) {
   }
 
   if (action === "add-expense" || action === "add-ad") {
-    const desc = e.parameter.description || e.parameter.desc || "ค่าใช้จ่าย";
+    const desc = fixThaiEncoding(e.parameter.description || e.parameter.desc || "ค่าใช้จ่าย");
     const price = parseFloat(e.parameter.price || "0");
-    const note = e.parameter.note || "";
-    const msg = `รายจ่าย ${desc} ${price} ${note}`;
-    const result = handleExpense(activeTabName, msg, /^รายจ่าย\s+(\S+)\s+(\d+(?:\.\d+)?)(?:\s+(.+))?/i, adminName);
+    const note = fixThaiEncoding(e.parameter.note || "");
+    const isAds = action === "add-ad";
+    const result = handleExpenseDirect(activeTabName, desc, price, note, isAds, adminName);
     
-    const cardType = action === "add-ad" ? "ad" : "expense";
+    const cardType = isAds ? "ad" : "expense";
     try {
       broadcastFlexCard(userId, cardType, desc, 0, price, activeTabName);
     } catch (err) {
@@ -290,7 +290,7 @@ function handleApiAction(e) {
   }
 
   if (action === "receive-stock") {
-    const code = e.parameter.code || "";
+    const code = fixThaiEncoding(e.parameter.code || "");
     const qty = parseInt(e.parameter.qty || "0", 10);
     const msg = `รับหนังสือ ${code} ${qty}`;
     const result = handleStock(activeTabName, msg, /^รับหนังสือ\s+(\S+)\s+(\d+)/i, adminName);
@@ -308,10 +308,9 @@ function handleApiAction(e) {
   if (action === "add-distribution") {
     const perPerson = parseFloat(e.parameter.perPerson || "0");
     const total = parseFloat(e.parameter.total || "0");
-    const note = e.parameter.note || `แบ่งคนละ ${perPerson} บาท`;
+    const note = fixThaiEncoding(e.parameter.note || `แบ่งคนละ ${perPerson} บาท`);
     const desc = `ส่วนแบ่งปันผล (${note})`;
-    const msg = `รายจ่าย ${desc} ${total} ${note}`;
-    const result = handleExpense(activeTabName, msg, /^รายจ่าย\s+(\S+)\s+(\d+(?:\.\d+)?)(?:\s+(.+))?/i, adminName);
+    const result = handleExpenseDirect(activeTabName, desc, total, note, false, adminName);
     
     try {
       broadcastFlexCard(userId, "distribution", desc, 0, total, activeTabName);
@@ -490,6 +489,55 @@ function handleIncome(activeTabName, message, regex, editor) {
   logSystemAction(activeTabName, "ยอดสมัคร", editor, { code: code, qty: qty, price: totalPrice });
 
   return `✅ บันทึกรายรับสำเร็จ!\n\n🛍️ สินค้า: ${code}\n➕ จำนวนเพิ่ม: ${qty} คน (รวมสะสม: ${currentQty + qty} คน)\n💰 ยอดเพิ่ม: ${totalPrice.toLocaleString()} บาท`;
+}
+
+function handleExpenseDirect(activeTabName, description, price, note, isAdsCost, editor) {
+  if (!editor) editor = "LINE หุ้นส่วน";
+  const dateStr = formatThaiDate(new Date());
+
+  updateWebDatabaseExpense(activeTabName, description, price, note, isAdsCost);
+
+  const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(activeTabName);
+  if (!sheet) return `❌ ไม่พบหน้าชีต "${activeTabName}"`;
+
+  const values = sheet.getRange("A1:J150").getValues();
+
+  let headerRowIdx = -1;
+  for (let i = 0; i < values.length; i++) {
+    const rowText = values[i].join(" ").toLowerCase();
+    if (rowText.includes("ว/ด/ป") && rowText.includes("รายการ")) {
+      headerRowIdx = i;
+      break;
+    }
+  }
+
+  if (headerRowIdx === -1) return "❌ ไม่พบแถวหัวตารางรายจ่ายหลัก";
+
+  let targetRow = -1;
+
+  if (isAdsCost) {
+    for (let i = headerRowIdx + 1; i < values.length; i++) {
+      if (!values[i][0] && !values[i][1] && !values[i][2]) {
+        targetRow = i + 1;
+        break;
+      }
+    }
+    if (targetRow === -1) targetRow = values.length + 1;
+    sheet.getRange(targetRow, 1, 1, 3).setValues([[dateStr, description, price]]);
+    logSystemAction(activeTabName, "ค่าโฆษณา", editor, { description: description, price: price });
+  } else {
+    for (let i = headerRowIdx + 1; i < values.length; i++) {
+      if (!values[i][3] && !values[i][4] && !values[i][5] && !values[i][6]) {
+        targetRow = i + 1;
+        break;
+      }
+    }
+    if (targetRow === -1) targetRow = values.length + 1;
+    sheet.getRange(targetRow, 4, 1, 4).setValues([[dateStr, description, price, note]]);
+    logSystemAction(activeTabName, "รายจ่าย", editor, { description: description, price: price, note: note });
+  }
+
+  return `✅ บันทึกรายจ่ายสำเร็จ!\n\n📅 วันที่: ${dateStr}\n🏷️ หมวด: ${isAdsCost ? "ค่าแอด/โฆษณา" : "รายจ่ายอื่นๆ"}\n📝 รายการ: ${description}\n💸 ยอดเงิน: ${price.toLocaleString()} บาท`;
 }
 
 function handleExpense(activeTabName, message, regex, editor) {

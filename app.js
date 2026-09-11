@@ -1169,7 +1169,8 @@ function renderTables(data) {
   const adsFragment = document.createDocumentFragment();
   
   (data.ads || []).forEach((item, index) => {
-    if (filterAds && !item.description.toLowerCase().includes(filterAds) && !item.date.toLowerCase().includes(filterAds)) return;
+    const adDesc = item.description || item.desc || "";
+    if (filterAds && !adDesc.toLowerCase().includes(filterAds) && !(item.date || "").toLowerCase().includes(filterAds)) return;
     
     const tr = document.createElement("tr");
     const hasSlips = (item.slips && item.slips.length > 0) || item.slip;
@@ -1179,7 +1180,7 @@ function renderTables(data) {
     
     tr.innerHTML = `
       <td data-label="ว/ด/ป">${formatDisplayDate(item.date)}</td>
-      <td data-label="รายการ">${item.description}</td>
+      <td data-label="รายการ">${adDesc}</td>
       <td data-label="ราคาค่าแอด">${priceHtml}</td>
       <td class="actions-col">
         <div class="action-btns">
