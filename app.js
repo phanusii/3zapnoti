@@ -4286,6 +4286,21 @@ function convertThaiDateToIso(thaiDateStr) {
   if (!thaiDateStr) return getTodayDateIso();
   const str = thaiDateStr.trim();
   if (str === "ยอดเริ่มต้น") return getTodayDateIso();
+
+  // Google Sheets may serialize date cells as a full English Date string.
+  // A year in the 1900s can be the result of Sheets interpreting a Thai
+  // two-digit year (69) as 1969; map it back to Buddhist 2569 / CE 2026.
+  const englishDateMatch = str.match(/^(?:Sun|Mon|Tue|Wed|Thu|Fri|Sat)\s+([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/i);
+  if (englishDateMatch) {
+    const enMonths = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+    const monthIndex = enMonths.indexOf(englishDateMatch[1].toLowerCase());
+    const day = parseInt(englishDateMatch[2], 10);
+    let year = parseInt(englishDateMatch[3], 10);
+    if (year >= 1900 && year < 2000) year = 2000 + (year % 100) - 43;
+    if (monthIndex !== -1 && day >= 1 && day <= 31) {
+      return `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    }
+  }
   
   // Split by space, slash, dash (do not split by dot as Thai months like พ.ค. contain dots)
   // e.g. "16 มิ.ย. 2569" or "16/มิ.ย./2569"
@@ -4367,15 +4382,35 @@ function formatDisplayDate(dateStr) {
   const fullThaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
   const enMonths = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
 
+  const formatYearShort = (year) => {
+    const yInt = parseInt(year, 10);
+    if (isNaN(yInt)) return "";
+    if (yInt < 100) return String(yInt > 50 ? yInt : yInt + 43).padStart(2, "0");
+    if (yInt >= 2500) return String(yInt).slice(-2);
+    if (yInt >= 2000) return String(yInt + 543).slice(-2);
+    // Sheets can turn a Thai short year such as 69 into CE 1969.
+    if (yInt >= 1900) return String(yInt).slice(-2);
+    return String(yInt + 543).slice(-2);
+  };
+
+  // Full Date strings returned by Google Sheets, e.g.
+  // "Mon May 11 2026 00:00:00 GMT+0700 (Indochina Time)".
+  const englishDateMatch = str.match(/^(?:Sun|Mon|Tue|Wed|Thu|Fri|Sat)\s+([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/i);
+  if (englishDateMatch) {
+    const monthIndex = enMonths.indexOf(englishDateMatch[1].toLowerCase());
+    if (monthIndex !== -1) {
+      return `${parseInt(englishDateMatch[2], 10)} ${thaiMonths[monthIndex]} ${formatYearShort(englishDateMatch[3])}`;
+    }
+  }
+
   // 1. Check if ISO format YYYY-MM-DD
   const isoMatch = str.match(/^(\d{4})[\-\/\.](\d{1,2})[\-\/\.](\d{1,2})/);
   if (isoMatch) {
     let yInt = parseInt(isoMatch[1], 10);
     let mInt = parseInt(isoMatch[2], 10);
     let dInt = parseInt(isoMatch[3], 10);
-    let beYear = yInt < 2100 ? yInt + 543 : yInt;
     let mStr = (mInt >= 1 && mInt <= 12) ? thaiMonths[mInt - 1] : thaiMonths[0];
-    return `${dInt} ${mStr} ${String(beYear).slice(-2)}`;
+    return `${dInt} ${mStr} ${formatYearShort(yInt)}`;
   }
 
   // 2. Tokenize string by space, slash, dash (do not split by dot as Thai months contain dots)
@@ -4409,13 +4444,7 @@ function formatDisplayDate(dateStr) {
         if (yearToken) {
           let yInt = parseInt(yearToken, 10);
           if (!isNaN(yInt)) {
-            if (yInt < 100) {
-              yearLastTwo = yInt > 50 ? String(yInt) : String(yInt + 43);
-            } else if (yInt < 2100) {
-              yearLastTwo = String(yInt + 543).slice(-2);
-            } else {
-              yearLastTwo = String(yInt).slice(-2);
-            }
+            yearLastTwo = formatYearShort(yInt);
           }
         }
         if (!yearLastTwo) {
