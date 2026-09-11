@@ -175,6 +175,38 @@
       cursor: pointer;
     }
 
+    .ad-range-selector-panel {
+      padding: 12px;
+      border: 1px dashed rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.25);
+    }
+
+    .ad-range-title {
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .ad-range-controls {
+      display: grid;
+      grid-template-columns: minmax(58px, 0.75fr) auto minmax(58px, 0.75fr) minmax(82px, 1.2fr) minmax(64px, 0.8fr);
+      gap: 7px;
+      align-items: center;
+    }
+
+    .ad-range-controls .glass-select {
+      min-width: 0;
+      padding: 11px 8px;
+      text-align: center;
+    }
+
+    .ad-range-label {
+      color: var(--text-secondary);
+      font-size: 13px;
+      text-align: center;
+    }
+
     /* select custom arrow icon */
     .form-group.select-type::after {
       content: '▼';
@@ -548,18 +580,28 @@
         <input type="date" id="adDate" class="glass-input" required>
       </div>
       <div class="form-group">
-        <label for="adDesc">แพลตฟอร์มโฆษณา</label>
-        <input type="text" id="adDesc" class="glass-input" placeholder="เช่น Facebook Ads, TikTok Ads" required>
+        <label for="adDesc">รายการค่าโฆษณา</label>
+        <input type="text" id="adDesc" class="glass-input" placeholder="เช่น Ads 1-10 พ.ค. หรือ ค่าโฆษณาแคมเปญเปิดตัว" required>
+      </div>
+      <div class="form-group ad-range-selector-panel">
+        <span class="ad-range-title">เลือกช่วงวันที่จ่ายค่าแอดเพื่อสร้างรายการอัตโนมัติ:</span>
+        <div class="ad-range-controls">
+          <select id="adStartDay" class="glass-select" aria-label="วันเริ่มต้น"></select>
+          <span class="ad-range-label">ถึง</span>
+          <select id="adEndDay" class="glass-select" aria-label="วันสิ้นสุด"></select>
+          <select id="adMonth" class="glass-select" aria-label="เดือน"></select>
+          <select id="adYear" class="glass-select" aria-label="ปี"></select>
+        </div>
       </div>
       <div class="form-group">
-        <label for="adPrice">จำนวนค่าโฆษณา (บาท)</label>
+        <label for="adPrice">จำนวนเงิน (บาท)</label>
         <input type="number" id="adPrice" class="glass-input" min="0.01" step="0.01" required>
       </div>
       <div class="form-group">
-        <label>รูปภาพสลิปค่าโฆษณา</label>
+        <label>รูปภาพสลิปโอนเงิน (ไม่บังคับ, แนบได้หลายรูป)</label>
         <div class="file-upload-container">
           <div class="upload-icon">📷</div>
-          <div class="upload-text">กดแนบรูปภาพสลิปหลักฐานค่าโฆษณา</div>
+          <div class="upload-text">กดเพื่อถ่ายรูปหรือแนบสลิปโอนเงิน</div>
           <input type="file" id="adSlips" accept="image/*" multiple>
         </div>
         <div id="adSlipPreviews" class="preview-container"></div>
@@ -919,9 +961,66 @@
       // Populate options
       if (activeAction === "add-sale") {
         populateSalesCourses();
+      } else if (activeAction === "add-ad") {
+        setupAdDescGenerator();
       } else if (activeAction === "receive-stock") {
         populateStockBooks();
       }
+    }
+
+    function setupAdDescGenerator() {
+      const startSelect = document.getElementById("adStartDay");
+      const endSelect = document.getElementById("adEndDay");
+      const monthSelect = document.getElementById("adMonth");
+      const yearSelect = document.getElementById("adYear");
+      const descInput = document.getElementById("adDesc");
+      if (!startSelect || !endSelect || !monthSelect || !yearSelect || !descInput) return;
+
+      if (!startSelect.options.length) {
+        for (let day = 1; day <= 31; day++) {
+          startSelect.add(new Option(String(day), String(day)));
+          endSelect.add(new Option(String(day), String(day)));
+        }
+      }
+
+      const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+      if (!monthSelect.options.length) {
+        thaiMonths.forEach(month => monthSelect.add(new Option(month, month)));
+      }
+
+      const projectYear = parseInt(currentYear, 10) || 2570;
+      const projectYearShort = projectYear - 2500;
+      yearSelect.innerHTML = "";
+      for (let year = projectYearShort - 1; year <= projectYearShort + 2; year++) {
+        yearSelect.add(new Option(String(year), String(year)));
+      }
+      yearSelect.value = String(projectYearShort);
+
+      const today = new Date();
+      const todayDay = today.getDate();
+      monthSelect.value = thaiMonths[today.getMonth()];
+      if (todayDay <= 10) {
+        startSelect.value = "1";
+        endSelect.value = "10";
+      } else if (todayDay <= 20) {
+        startSelect.value = "11";
+        endSelect.value = "20";
+      } else {
+        startSelect.value = "21";
+        endSelect.value = String(new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate());
+      }
+
+      const updateDescription = () => {
+        descInput.value = `Ads ${startSelect.value}-${endSelect.value} ${monthSelect.value} ${yearSelect.value}`;
+      };
+
+      if (startSelect.dataset.generatorBound !== "true") {
+        [startSelect, endSelect, monthSelect, yearSelect].forEach(select => {
+          select.addEventListener("change", updateDescription);
+        });
+        startSelect.dataset.generatorBound = "true";
+      }
+      updateDescription();
     }
 
     // Populate Sales dropdown
@@ -1492,7 +1591,7 @@
       const price = parseFloat(document.getElementById("adPrice").value) || 0;
 
       if (!description || price <= 0) {
-        alert("กรุณากรอกแพลตฟอร์มโฆษณาและจำนวนเงิน");
+        alert("กรุณากรอกรายการค่าโฆษณาและจำนวนเงิน");
         return;
       }
 
@@ -1500,7 +1599,7 @@
       const sheetsDate = `${parts[2]}/${parts[1]}/${parseInt(parts[0]) + 543}`;
 
       const payload = { date: sheetsDate, description, price };
-      const desc = `• แพลตฟอร์ม: <b>${description}</b>\n• จำนวนเงิน: <b>${price.toLocaleString()} บาท</b>`;
+      const desc = `• รายการ: <b>${description}</b>\n• จำนวนเงิน: <b>${price.toLocaleString()} บาท</b>`;
       executeSubmit("btnSubmitAd", payload, "add-ad", "➕ <b>บันทึกค่าโฆษณาใหม่ (ผ่าน LINE)</b>", desc);
     }
 
