@@ -327,104 +327,69 @@ function handleApiAction(e) {
 }
 
 function getWebDatabase() {
-  const jsonStr = PropertiesService.getScriptProperties().getProperty("WEB_APP_DATABASE_JSON");
-  let webDb = {};
-  if (jsonStr) {
-    try {
-      webDb = JSON.parse(jsonStr) || {};
-    } catch (e) {
-      webDb = {};
-    }
+  let cachedDb = {};
+  try {
+    const jsonStr = PropertiesService.getScriptProperties().getProperty("WEB_APP_DATABASE_JSON");
+    if (jsonStr) cachedDb = JSON.parse(jsonStr) || {};
+  } catch (e) {
+    cachedDb = {};
   }
-  
-  // Merge authoritative Google Sheets data into webDb so Web App and LINE summary cards are ALWAYS 100% synced
+
+  let cleanDb = {};
   try {
     const sheetsData = getAllSheetsData();
     Object.keys(sheetsData).forEach(function(key) {
-      if (!webDb[key]) webDb[key] = {};
-      const sheetProj = sheetsData[key];
-      
-      // 1. Sales
-      if (Array.isArray(sheetProj.sales) && sheetProj.sales.length > 0) {
-        webDb[key].sales = sheetProj.sales;
-      }
-      
-      // 2. Ads
-      if (Array.isArray(sheetProj.ads)) {
-        if (!Array.isArray(webDb[key].ads)) webDb[key].ads = [];
-        sheetProj.ads.forEach(function(sAd) {
-          const sDateFormatted = formatThaiDate(sAd.date);
-          const exists = webDb[key].ads.some(function(wAd) {
-            const wDateFormatted = formatThaiDate(wAd.date);
-            const descMatch = (wAd.description || wAd.desc || "").trim().toLowerCase() === (sAd.description || "").trim().toLowerCase();
-            const priceMatch = Math.abs((parseFloat(wAd.price) || 0) - (parseFloat(sAd.price) || 0)) < 0.1;
-            return descMatch && priceMatch;
+      cleanDb[key] = sheetsData[key] || {};
+      const oldProj = cachedDb[key] || {};
+
+      // Preserve slips for Ads
+      if (Array.isArray(cleanDb[key].ads) && Array.isArray(oldProj.ads)) {
+        cleanDb[key].ads.forEach(function(newAd) {
+          const match = oldProj.ads.find(function(oldAd) {
+            return (oldAd.description || oldAd.desc || "").trim().toLowerCase() === (newAd.description || "").trim().toLowerCase() &&
+                   Math.abs((parseFloat(oldAd.price) || 0) - (parseFloat(newAd.price) || 0)) < 0.1;
           });
-          if (!exists) {
-            webDb[key].ads.push(sAd);
+          if (match) {
+            if (match.slips) newAd.slips = match.slips;
+            if (match.slip) newAd.slip = match.slip;
           }
         });
       }
 
-      // 3. Expenses
-      if (Array.isArray(sheetProj.expenses)) {
-        if (!Array.isArray(webDb[key].expenses)) webDb[key].expenses = [];
-        sheetProj.expenses.forEach(function(sExp) {
-          const exists = webDb[key].expenses.some(function(wExp) {
-            const descMatch = (wExp.description || wExp.desc || "").trim().toLowerCase() === (sExp.description || "").trim().toLowerCase();
-            const priceMatch = Math.abs((parseFloat(wExp.price) || 0) - (parseFloat(sExp.price) || 0)) < 0.1;
-            return descMatch && priceMatch;
+      // Preserve slips for Expenses
+      if (Array.isArray(cleanDb[key].expenses) && Array.isArray(oldProj.expenses)) {
+        cleanDb[key].expenses.forEach(function(newExp) {
+          const match = oldProj.expenses.find(function(oldExp) {
+            return (oldExp.description || oldExp.desc || "").trim().toLowerCase() === (newExp.description || "").trim().toLowerCase() &&
+                   Math.abs((parseFloat(oldExp.price) || 0) - (parseFloat(newExp.price) || 0)) < 0.1;
           });
-          if (!exists) {
-            webDb[key].expenses.push(sExp);
+          if (match) {
+            if (match.slips) newExp.slips = match.slips;
+            if (match.slip) newExp.slip = match.slip;
           }
         });
       }
 
-      // 4. Distributions
-      if (Array.isArray(sheetProj.distributions)) {
-        if (!Array.isArray(webDb[key].distributions)) webDb[key].distributions = [];
-        sheetProj.distributions.forEach(function(sDist) {
-          const exists = webDb[key].distributions.some(function(wDist) {
-            return Math.abs((parseFloat(wDist.total) || 0) - (parseFloat(sDist.total) || 0)) < 0.1;
+      // Preserve slips for Distributions
+      if (Array.isArray(cleanDb[key].distributions) && Array.isArray(oldProj.distributions)) {
+        cleanDb[key].distributions.forEach(function(newDist) {
+          const match = oldProj.distributions.find(function(oldDist) {
+            return Math.abs((parseFloat(oldDist.total) || 0) - (parseFloat(newDist.total) || 0)) < 0.1;
           });
-          if (!exists) {
-            webDb[key].distributions.push(sDist);
-          }
-        });
-      }
-
-      // 5. Stock
-      if (Array.isArray(sheetProj.stock) && sheetProj.stock.length > 0) {
-        if (!Array.isArray(webDb[key].stock)) webDb[key].stock = [];
-        sheetProj.stock.forEach(function(sStk) {
-          const normCode = (sStk.bookCode || "").trim().toLowerCase();
-          let existing = webDb[key].stock.find(function(wStk) { return (wStk.code || "").trim().toLowerCase() === normCode; });
-          if (existing) {
-            if (sStk.received > (existing.add || 0)) {
-              existing.add = sStk.received;
-              existing.remaining = sStk.received - (existing.sold || 0);
-            }
-          } else {
-            webDb[key].stock.push({
-              code: (sStk.bookCode || "").toUpperCase(),
-              initial: 0,
-              add: sStk.received,
-              sold: 0,
-              remaining: sStk.received
-            });
+          if (match) {
+            if (match.slips) newDist.slips = match.slips;
+            if (match.slip) newDist.slip = match.slip;
           }
         });
       }
     });
-    
-    // Save merged webDb back to PropertiesService
-    saveWebDatabase(webDb);
-  } catch (err) {
-    Logger.log("Error merging sheetsData in getWebDatabase: " + err.toString());
-  }
 
-  return webDb;
+    saveWebDatabase(cleanDb);
+    return cleanDb;
+  } catch (err) {
+    Logger.log("Error in getWebDatabase: " + err.toString());
+    return cachedDb;
+  }
 }
 
 function saveWebDatabase(webDbObj) {
