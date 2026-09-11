@@ -102,6 +102,15 @@
     </div>
   </div>
 
+  <div id="cloudSyncOverlay" class="cloud-sync-overlay" role="status" aria-live="polite">
+    <div class="cloud-sync-card">
+      <div class="cloud-sync-spinner" aria-hidden="true"></div>
+      <strong id="cloudSyncTitle">กำลังดึงยอดล่าสุด</strong>
+      <span id="cloudSyncMessage">กำลังตรวจสอบข้อมูลจาก Google Sheets กรุณารอสักครู่...</span>
+      <button type="button" id="cloudSyncRetry" class="glass-btn primary" hidden>ลองใหม่อีกครั้ง</button>
+    </div>
+  </div>
+
   <div class="app-container">
     <!-- Navigation Header -->
     <header class="app-header">

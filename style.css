@@ -2003,6 +2003,64 @@ body.liff-input-mode dialog form.glass-form h2 {
   color: white;
 }
 
+/* Keep cached/default figures hidden until the canonical Google Sheets data arrives. */
+.cloud-sync-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(248, 250, 252, 0.96);
+  backdrop-filter: blur(10px);
+}
+
+.cloud-sync-overlay[hidden] {
+  display: none;
+}
+
+.cloud-sync-card {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 28px;
+  text-align: center;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.14);
+}
+
+.cloud-sync-card span {
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.cloud-sync-card [hidden] {
+  display: none !important;
+}
+
+.cloud-sync-spinner {
+  width: 34px;
+  height: 34px;
+  border: 4px solid rgba(99, 102, 241, 0.18);
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: cloud-sync-spin 0.8s linear infinite;
+}
+
+.cloud-sync-overlay.is-error .cloud-sync-spinner {
+  display: none;
+}
+
+@keyframes cloud-sync-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Course Comparison View Styles */
 .comparison-grid {
   display: grid;

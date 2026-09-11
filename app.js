@@ -252,10 +252,10 @@ window.addEventListener("DOMContentLoaded", async () => {
   setupEventListeners();
   await loadDatabase();
   initializeSelectors();
-  renderDashboard();
-  
-  // Background cloud database sync (GAS Web App DB + LINE submissions)
-  loadWebDatabaseFromGAS();
+
+  // Do not render cached/default financial figures as current data. Google Sheets
+  // is the same canonical source used by the LINE summary card.
+  await loadWebDatabaseFromGAS({ initial: true });
   // Keep dashboards on other devices close to real-time after a LIFF write.
   setInterval(() => loadWebDatabaseFromGAS(), 5000);
   window.addEventListener("focus", () => loadWebDatabaseFromGAS());
@@ -545,7 +545,8 @@ async function loadDatabase() {
   Object.keys(db).forEach(k => {
     if (db[k] && db[k].sales) consolidateSales(db[k]);
   });
-  saveToLocalStorage();
+  // Boot data is only a structural/offline fallback. Never push it to the cloud.
+  localStorage.setItem("sta69_revenue_tracker_db", JSON.stringify(db));
 }
 
 function consolidateSales(data) {
@@ -591,14 +592,36 @@ function syncWebDatabaseToGAS() {
   }, 1000);
 }
 
-async function loadWebDatabaseFromGAS() {
+function setCloudSyncState(state, message = "") {
+  const overlay = document.getElementById("cloudSyncOverlay");
+  if (!overlay) return;
+  const title = document.getElementById("cloudSyncTitle");
+  const messageEl = document.getElementById("cloudSyncMessage");
+  const retry = document.getElementById("cloudSyncRetry");
+
+  if (state === "ready") {
+    overlay.hidden = true;
+    return;
+  }
+
+  overlay.hidden = false;
+  overlay.classList.toggle("is-error", state === "error");
+  title.textContent = state === "error" ? "ยังไม่สามารถดึงยอดล่าสุดได้" : "กำลังดึงยอดล่าสุด";
+  messageEl.textContent = message || (state === "error"
+    ? "เพื่อป้องกันการแสดงยอดเก่า ระบบจะยังไม่เปิดแดชบอร์ด กรุณาลองใหม่"
+    : "กำลังตรวจสอบข้อมูลจาก Google Sheets กรุณารอสักครู่...");
+  retry.hidden = state !== "error";
+}
+
+async function loadWebDatabaseFromGAS({ initial = false } = {}) {
   // A slow Apps Script response can take longer than the polling interval.
   // Keep one request in flight so older responses cannot overwrite newer data.
-  if (isCloudDbSyncing) return;
+  if (isCloudDbSyncing) return false;
   isCloudDbSyncing = true;
+  if (initial) setCloudSyncState("loading");
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  const timeoutId = setTimeout(() => controller.abort(), initial ? 60000 : 30000);
   try {
     const gasUrl = `https://script.google.com/macros/s/AKfycbxFD2loccRj_htSLTsDGY76ytQrvu80W_DzEIMMR7qhhUMIJMq7b6BUYxEBt6QUu9Ci/exec?action=get-web-database&v=${Date.now()}`;
     const res = await fetch(gasUrl, { signal: controller.signal });
@@ -647,14 +670,24 @@ async function loadWebDatabaseFromGAS() {
     localStorage.setItem("sta69_revenue_tracker_db", JSON.stringify(db));
     initializeSelectors();
     renderDashboard();
+    setCloudSyncState("ready");
     console.log("Web App database synchronized with cloud DB.");
+    return true;
   } catch (err) {
     console.warn("Cloud DB sync notice:", err);
+    if (initial || !document.getElementById("cloudSyncOverlay")?.hidden) {
+      setCloudSyncState("error");
+    }
+    return false;
   } finally {
     clearTimeout(timeoutId);
     isCloudDbSyncing = false;
   }
 }
+
+document.getElementById("cloudSyncRetry")?.addEventListener("click", () => {
+  loadWebDatabaseFromGAS({ initial: true });
+});
 
 // Save database to LocalStorage
 function saveToLocalStorage() {

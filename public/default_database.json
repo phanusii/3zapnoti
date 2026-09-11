@@ -3,21 +3,21 @@
     "sales": [
       {
         "code": "3ZAP  A",
-        "qty": 90,
+        "qty": 95,
         "unitPrice": 1990,
-        "totalPrice": 179100.0
+        "totalPrice": 189050.0
       },
       {
         "code": "Combo S",
-        "qty": 55,
+        "qty": 62,
         "unitPrice": 3590,
-        "totalPrice": 197450.0
+        "totalPrice": 222580.0
       },
       {
         "code": "3 ZEED",
-        "qty": 1,
+        "qty": 16,
         "unitPrice": 1990.0,
-        "totalPrice": 1990.0
+        "totalPrice": 31840.0
       },
       {
         "code": "ซื้อหนังสือ3zeed",
