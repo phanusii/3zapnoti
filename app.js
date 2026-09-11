@@ -254,10 +254,10 @@ window.addEventListener("DOMContentLoaded", async () => {
   initializeSelectors();
   renderDashboard();
   
-  // Background auto-sync immediately on load & repeat periodically
-  silentAutoSyncGoogleSheets();
-  setInterval(() => silentAutoSyncGoogleSheets(), 30000);
-  window.addEventListener("focus", () => silentAutoSyncGoogleSheets());
+  // Background cloud database sync (GAS Web App DB + LINE submissions)
+  loadWebDatabaseFromGAS();
+  setInterval(() => loadWebDatabaseFromGAS(), 15000);
+  window.addEventListener("focus", () => loadWebDatabaseFromGAS());
   
   // Background load and register active Telegram chat recipients
   getTelegramChats().catch(err => console.error("Error background loading Telegram chats:", err));
@@ -587,6 +587,50 @@ function syncWebDatabaseToGAS() {
       console.error("Error in syncWebDatabaseToGAS:", e);
     }
   }, 1000);
+}
+
+async function loadWebDatabaseFromGAS() {
+  try {
+    const gasUrl = "https://script.google.com/macros/s/AKfycbxFD2loccRj_htSLTsDGY76ytQrvu80W_DzEIMMR7qhhUMIJMq7b6BUYxEBt6QUu9Ci/exec?action=get-web-database";
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    const res = await fetch(gasUrl, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (res.ok) {
+      const cloudDb = await res.json();
+      if (cloudDb && typeof cloudDb === "object" && Object.keys(cloudDb).length > 0) {
+        let updated = false;
+        Object.keys(cloudDb).forEach(k => {
+          if (cloudDb[k] && typeof cloudDb[k] === "object") {
+            if (!db[k]) {
+              db[k] = cloudDb[k];
+              updated = true;
+            } else {
+              ["sales", "ads", "expenses", "distributions", "stock", "stockLogs"].forEach(prop => {
+                if (Array.isArray(cloudDb[k][prop])) {
+                  if (!Array.isArray(db[k][prop])) {
+                    db[k][prop] = cloudDb[k][prop];
+                    updated = true;
+                  } else if (cloudDb[k][prop].length > db[k][prop].length) {
+                    db[k][prop] = cloudDb[k][prop];
+                    updated = true;
+                  }
+                }
+              });
+            }
+          }
+        });
+        if (updated) {
+          localStorage.setItem("sta69_revenue_tracker_db", JSON.stringify(db));
+          initializeSelectors();
+          renderDashboard();
+          console.log("Web App database updated from cloud (GAS).");
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Cloud DB sync notice:", err);
+  }
 }
 
 // Save database to LocalStorage
