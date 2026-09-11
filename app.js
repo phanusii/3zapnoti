@@ -253,9 +253,16 @@ window.addEventListener("DOMContentLoaded", async () => {
   await loadDatabase();
   initializeSelectors();
 
-  // Do not render cached/default financial figures as current data. Google Sheets
-  // is the same canonical source used by the LINE summary card.
-  await loadWebDatabaseFromGAS({ initial: true });
+  // A previously verified cloud snapshot can render immediately. A lightweight
+  // version check updates it in the background only when LINE/web data changed.
+  const hasVerifiedSnapshot = Boolean(db && db._meta && db._meta.version);
+  if (hasVerifiedSnapshot) {
+    renderDashboard();
+    setCloudSyncState("ready");
+    loadWebDatabaseFromGAS();
+  } else {
+    await loadWebDatabaseFromGAS({ initial: true, force: true });
+  }
   // Keep dashboards on other devices close to real-time after a LIFF write.
   setInterval(() => loadWebDatabaseFromGAS(), 5000);
   window.addEventListener("focus", () => loadWebDatabaseFromGAS());
@@ -613,7 +620,7 @@ function setCloudSyncState(state, message = "") {
   retry.hidden = state !== "error";
 }
 
-async function loadWebDatabaseFromGAS({ initial = false } = {}) {
+async function loadWebDatabaseFromGAS({ initial = false, force = false } = {}) {
   // A slow Apps Script response can take longer than the polling interval.
   // Keep one request in flight so older responses cannot overwrite newer data.
   if (isCloudDbSyncing) return false;
@@ -623,6 +630,17 @@ async function loadWebDatabaseFromGAS({ initial = false } = {}) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), initial ? 60000 : 30000);
   try {
+    if (!force && db && db._meta && db._meta.version) {
+      const versionUrl = `https://script.google.com/macros/s/AKfycbxFD2loccRj_htSLTsDGY76ytQrvu80W_DzEIMMR7qhhUMIJMq7b6BUYxEBt6QUu9Ci/exec?action=get-web-database-version&v=${Date.now()}`;
+      const versionRes = await fetch(versionUrl, { signal: controller.signal });
+      if (versionRes.ok) {
+        const versionInfo = await versionRes.json();
+        if (String(versionInfo.version || "") === String(db._meta.version)) {
+          setCloudSyncState("ready");
+          return true;
+        }
+      }
+    }
     const gasUrl = `https://script.google.com/macros/s/AKfycbxFD2loccRj_htSLTsDGY76ytQrvu80W_DzEIMMR7qhhUMIJMq7b6BUYxEBt6QUu9Ci/exec?action=get-web-database&v=${Date.now()}`;
     const res = await fetch(gasUrl, { signal: controller.signal });
     if (!res.ok) {
@@ -666,6 +684,7 @@ async function loadWebDatabaseFromGAS({ initial = false } = {}) {
 
       db[k] = cloudProj;
     });
+    if (cloudDb._meta && cloudDb._meta.version) db._meta = cloudDb._meta;
 
     localStorage.setItem("sta69_revenue_tracker_db", JSON.stringify(db));
     initializeSelectors();

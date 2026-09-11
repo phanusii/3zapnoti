@@ -227,7 +227,7 @@ function handleApiAction(e) {
     }
 
     if (jsonStr) {
-      PropertiesService.getScriptProperties().setProperty("WEB_APP_DATABASE_JSON", jsonStr);
+      saveWebDatabase(JSON.parse(jsonStr));
       return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "Web database saved" }))
         .setMimeType(ContentService.MimeType.JSON);
     } else {
@@ -240,6 +240,14 @@ function handleApiAction(e) {
     const webDb = getWebDatabase();
     return ContentService.createTextOutput(JSON.stringify(webDb))
       .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  if (action === "get-web-database-version") {
+    return jsonResponse(getWebDatabaseVersion());
+  }
+
+  if (action === "refresh-web-database") {
+    return jsonResponse({ status: "success", database: refreshWebDatabaseSnapshot() });
   }
 
   if (action === "send-flex-card") {
@@ -303,6 +311,7 @@ function handleApiAction(e) {
       return completeTransaction({ status: "error", transactionId: transactionId, message: "❌ ข้อมูลยอดสมัครไม่ครบหรือไม่ถูกต้อง" });
     }
     const result = handleIncomeAbsolute(activeTabName, code, qty, totalPrice, adminName);
+    if (result.indexOf("✅") === 0) updateWebDatabaseIncomeAbsolute(activeTabName, code, qty, totalPrice);
     
     try {
       if (!userId) throw new Error("No LINE user ID; skip broadcast");
@@ -389,14 +398,13 @@ function handleApiAction(e) {
 }
 
 function getWebDatabase() {
-  let cachedDb = {};
-  try {
-    const jsonStr = PropertiesService.getScriptProperties().getProperty("WEB_APP_DATABASE_JSON");
-    if (jsonStr) cachedDb = JSON.parse(jsonStr) || {};
-  } catch (e) {
-    cachedDb = {};
-  }
+  const cachedDb = readWebDatabaseSnapshot();
+  if (cachedDb && Object.keys(cachedDb).length > 0) return cachedDb;
+  return refreshWebDatabaseSnapshot();
+}
 
+function refreshWebDatabaseSnapshot() {
+  const cachedDb = readWebDatabaseSnapshot();
   let cleanDb = {};
   try {
     const sheetsData = getAllSheetsData();
@@ -454,13 +462,77 @@ function getWebDatabase() {
   }
 }
 
+function readWebDatabaseSnapshot() {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const chunkCount = parseInt(props.getProperty("WEB_DB_CHUNK_COUNT") || "0", 10);
+    let json = "";
+    for (let i = 0; i < chunkCount; i++) {
+      const chunk = props.getProperty("WEB_DB_CHUNK_" + i);
+      if (!chunk) throw new Error("Snapshot chunk missing: " + i);
+      json += chunk;
+    }
+    if (json) return JSON.parse(json) || {};
+    const legacy = props.getProperty("WEB_APP_DATABASE_JSON");
+    return legacy ? (JSON.parse(legacy) || {}) : {};
+  } catch (e) {
+    Logger.log("Error reading web database snapshot: " + e);
+    return {};
+  }
+}
+
+function getWebDatabaseVersion() {
+  const props = PropertiesService.getScriptProperties();
+  return {
+    status: "success",
+    version: props.getProperty("WEB_DB_VERSION") || "",
+    updatedAt: props.getProperty("WEB_DB_UPDATED_AT") || ""
+  };
+}
+
 function saveWebDatabase(webDbObj) {
   if (!webDbObj) return;
   try {
-    PropertiesService.getScriptProperties().setProperty("WEB_APP_DATABASE_JSON", JSON.stringify(webDbObj));
+    const props = PropertiesService.getScriptProperties();
+    const version = String(Date.now());
+    const updatedAt = new Date().toISOString();
+    webDbObj._meta = { version: version, updatedAt: updatedAt };
+    const json = JSON.stringify(webDbObj);
+    // Script Properties limit is measured in UTF-8 bytes; Thai characters can
+    // use three bytes each, so keep chunks comfortably below the per-value cap.
+    const chunkSize = 2000;
+    const chunks = Math.ceil(json.length / chunkSize);
+    const oldCount = parseInt(props.getProperty("WEB_DB_CHUNK_COUNT") || "0", 10);
+    const values = {
+      WEB_DB_CHUNK_COUNT: String(chunks),
+      WEB_DB_VERSION: version,
+      WEB_DB_UPDATED_AT: updatedAt
+    };
+    for (let i = 0; i < chunks; i++) values["WEB_DB_CHUNK_" + i] = json.substring(i * chunkSize, (i + 1) * chunkSize);
+    props.setProperties(values, false);
+    for (let i = chunks; i < oldCount; i++) props.deleteProperty("WEB_DB_CHUNK_" + i);
   } catch (e) {
     Logger.log("Error saving WEB_APP_DATABASE_JSON: " + e);
   }
+}
+
+function updateWebDatabaseIncomeAbsolute(tabName, code, qty, totalPrice) {
+  const webDb = getWebDatabase() || {};
+  const dbKey = getDbKeyFromTabName(tabName);
+  if (!webDb[dbKey]) webDb[dbKey] = {};
+  if (!Array.isArray(webDb[dbKey].sales)) webDb[dbKey].sales = [];
+  const normCode = String(code || "").replace(/\s+/g, "").toUpperCase();
+  const existing = webDb[dbKey].sales.find(function(item) {
+    return item.code && item.code.replace(/\s+/g, "").toUpperCase() === normCode;
+  });
+  if (existing) {
+    existing.qty = qty;
+    existing.totalPrice = totalPrice;
+    existing.unitPrice = qty > 0 ? totalPrice / qty : 0;
+  } else {
+    webDb[dbKey].sales.push({ code: code, qty: qty, totalPrice: totalPrice, unitPrice: qty > 0 ? totalPrice / qty : 0 });
+  }
+  saveWebDatabase(webDb);
 }
 
 function getDbKeyFromTabName(tabName) {
@@ -889,6 +961,16 @@ function doGet(e) {
     if (action === "get-web-database") {
       const webDb = getWebDatabase();
       return ContentService.createTextOutput(JSON.stringify(webDb || {}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (action === "get-web-database-version") {
+      return ContentService.createTextOutput(JSON.stringify(getWebDatabaseVersion()))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (action === "refresh-web-database") {
+      return ContentService.createTextOutput(JSON.stringify({ status: "success", database: refreshWebDatabaseSnapshot() }))
         .setMimeType(ContentService.MimeType.JSON);
     }
     
