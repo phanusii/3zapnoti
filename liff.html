@@ -129,12 +129,16 @@
       display: flex;
       flex-direction: column;
       gap: 16px;
+      width: 100%;
+      min-width: 0;
     }
 
     .form-group {
       display: flex;
       flex-direction: column;
       gap: 6px;
+      width: 100%;
+      min-width: 0;
     }
 
     label {
@@ -153,6 +157,8 @@
 
     .glass-input, .glass-select {
       width: 100%;
+      min-width: 0;
+      max-width: 100%;
       background: rgba(15, 23, 42, 0.6);
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 12px;
@@ -162,6 +168,15 @@
       font-family: var(--font-family);
       outline: none;
       transition: all 0.3s ease;
+    }
+
+    /* Safari/iOS gives date controls a large intrinsic width. Constrain the
+       native control to its form column so it cannot overflow the card. */
+    input[type="date"].glass-input {
+      display: block;
+      inline-size: 100%;
+      min-inline-size: 0;
+      max-inline-size: 100%;
     }
 
     .glass-input:focus, .glass-select:focus {
